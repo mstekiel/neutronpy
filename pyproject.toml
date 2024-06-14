@@ -22,19 +22,38 @@ include = [
     { path = 'neutronpy/ui/*.ui', format = 'wheel' },
 ]
 
+# Main dependencies
 [tool.poetry.dependencies]
 python = "^3.6"
 numpy = "^1.10"
 scipy = "^1.0"
-matplotlib = "^2.0"
+matplotlib = "^3.0"
 lmfit = "^0.9.5"
 h5py = "^3.1.0"
 
-[tool.poetry.dev-dependencies]
+
+# Dev tools
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
 pytest = "^6.1.2"
 mock = "^4.0.2"
 codecov = "^2.1.10"
 pytest-cov = "^2.10.1"
+
+
+# Doc tools
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^1.4"
+releases = "^1.5.0"
+numpydoc = "^0.8.0"
+sphinx-rtd-theme = "*"
+
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

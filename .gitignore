@@ -44,3 +44,5 @@ test.out*
 .coverage*
 .cache/*
 .pytest_cache/
+notes.md
+npy-tutorials.py
