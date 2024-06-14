@@ -6,7 +6,7 @@ import numpy as np
 from scipy.linalg import block_diag as blkdiag
 
 from ..crystal import Sample
-from ..energy import Energy
+from ..neutron import Neutron
 from .analyzer import Analyzer
 from .exceptions import ScatteringTriangleError
 from .general import GeneralInstrument
@@ -1021,7 +1021,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         except AttributeError:
             fx = 2
 
-        kfix = Energy(energy=self.efixed).wavevector
+        kfix = Neutron(energy=self.efixed).wavevector
         f = 0.4826  # f converts from energy units into k^2, f=0.4826 for meV
         ki = np.sqrt(kfix ** 2 + (fx - 1) * f * w)  # kinematical equations.
         kf = np.sqrt(kfix ** 2 - (2 - fx) * f * w)

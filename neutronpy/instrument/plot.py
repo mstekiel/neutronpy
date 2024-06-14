@@ -4,7 +4,7 @@ from warnings import warn
 
 import numpy as np
 
-from ..energy import Energy
+from ..neutron import Neutron
 from .tools import _CleanArgs, fproject, get_bragg_widths
 
 
@@ -463,7 +463,7 @@ class PlotInstrument(object):
                            ' dQ_z={0:.3f} Vanadium width V={1:.3f} [meV]'.format(*bragg_widths[2:4]),
                            'Instrument parameters:',
                            ' DM  =  {0:.3f} ETAM= {1:.3f} SM={2}'.format(self.mono.d, self.mono.mosaic, self.mono.dir),
-                           ' KFIX=  {0:.3f} FX  = {1} SS={2}'.format(Energy(energy=self.efixed).wavevector, FX,
+                           ' KFIX=  {0:.3f} FX  = {1} SS={2}'.format(Neutron(energy=self.efixed).wavevector, FX,
                                                                        self.sample.dir),
                            ' DA  =  {0:.3f} ETAA= {1:.3f} SA={2}'.format(self.ana.d, self.ana.mosaic, self.ana.dir),
                            ' A1= {0:.2f} A2={1:.2f} A3={2:.2f} A4={3:.2f} A5={4:.2f} A6={5:.2f} [deg]'.format(*angles),

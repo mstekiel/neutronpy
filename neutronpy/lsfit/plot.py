@@ -73,7 +73,7 @@ class PlotFit(object):
                ax1=plt.subplot2grid((2,3),(0,0),colspan=2,rowspan=2)
            #plot fit
            ax1.plot(xin,fit_function(self.params,xin),'b-')
-           plt.hold(True)
+
            #plot data
            ax1.errorbar(xin,yin,yerr=errin,fmt='ro')
            # add text table

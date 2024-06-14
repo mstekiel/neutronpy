@@ -6,7 +6,7 @@ import numpy as np
 
 from ..constants import e, hbar, neutron_mass
 from ..crystal.sample import Sample
-from ..energy import Energy
+from ..neutron import Neutron
 from .chopper import Chopper
 from .detector import Detector
 from .exceptions import DetectorError
@@ -76,7 +76,7 @@ class TimeOfFlightInstrument(GeneralInstrument, PlotInstrument):
     """
 
     def __init__(self, ei=3.0, choppers=None, sample=None, detector=None, guides=None, theta_i=0, phi_i=0, **kwargs):
-        self._ei = Energy(energy=ei)
+        self._ei = Neutron(energy=ei)
 
         if choppers:
             if isinstance(choppers, list):
@@ -123,7 +123,7 @@ class TimeOfFlightInstrument(GeneralInstrument, PlotInstrument):
 
     @ei.setter
     def ei(self, value):
-        self._ei = Energy(energy=value)
+        self._ei = Neutron(energy=value)
 
     @property
     def orient1(self):
@@ -190,7 +190,7 @@ class TimeOfFlightInstrument(GeneralInstrument, PlotInstrument):
         kf = get_kfree(W, ki)
 
         vi = self.ei.velocity
-        vf = Energy(wavevector=kf).velocity
+        vf = Neutron(wavevector=kf).velocity
 
         ti = l_pm / vi
         tf = l_sd / vf

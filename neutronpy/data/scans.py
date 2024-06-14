@@ -102,7 +102,6 @@ class Scans(object):
         """
         self.scans_check()
         fh = plt.figure()
-        plt.hold(True)
 
         for idx, scan_num in enumerate(self.scans.keys()):
             xin = self.scans[scan_num].data[x]

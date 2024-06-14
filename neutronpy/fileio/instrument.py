@@ -2,7 +2,7 @@
 import numpy as np
 
 from ..crystal import Sample
-from ..energy import Energy
+from ..neutron import Neutron
 from ..instrument import Instrument
 from ..instrument.tas_instrument import TripleAxisInstrument
 from ..instrument.tof_instrument import TimeOfFlightInstrument
@@ -348,7 +348,7 @@ def load_instrument(filename, filetype='ascii'):
 
         # -------------------------------------------------------------------------
 
-        energy = Energy(wavevector=par['k'])
+        energy = Neutron(wavevector=par['k'])
 
         sample = Sample(par['as'], par['bs'], par['cs'],
                         par['aa'], par['bb'], par['cc'],

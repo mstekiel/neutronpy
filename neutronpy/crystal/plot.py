@@ -36,7 +36,7 @@ class PlotMaterial(object):
 
         ax.scatter(x, y, z, s=m)
 
-        plt.axis('scaled')
+        # plt.axis('scaled')    # only auto works
         plt.axis('off')
 
         plt.show()

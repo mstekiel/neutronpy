@@ -6,7 +6,7 @@ import numpy as np
 
 from ..constants import neutron_mass, hbar
 from ..crystal import Sample
-from ..energy import Energy
+from ..neutron import Neutron
 from .exceptions import AnalyzerError, MonochromatorError, ScatteringTriangleError
 
 
@@ -580,7 +580,7 @@ def get_kfree(W, kfixed, ki_fixed=True):
         Returns initial or final wavevector magnitude.
 
     """
-    kE_sq = Energy(energy=W).wavevector ** 2
+    kE_sq = Neutron(energy=W).wavevector ** 2
     if ki_fixed:
         kE_sq = -kE_sq
 

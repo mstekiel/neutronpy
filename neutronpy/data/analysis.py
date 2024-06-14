@@ -4,7 +4,7 @@ import numbers
 import numpy as np
 
 from ..constants import BOLTZMANN_IN_MEV_K
-from ..energy import Energy
+from ..neutron import Neutron
 
 
 class Analysis(object):
@@ -179,8 +179,8 @@ class Analysis(object):
             The detector counts scaled by the total scattering cross section
             and ki/kf
         """
-        ki = Energy(energy=ei).wavevector
-        kf = Energy(energy=ei - self.e).wavevector
+        ki = Neutron(energy=ei).wavevector
+        kf = Neutron(energy=ei - self.e).wavevector
 
         return 4 * np.pi / material.total_scattering_cross_section * ki / kf * self.detector
 

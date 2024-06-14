@@ -14,7 +14,7 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QSizePolicy, QTextEdit,
                              QVBoxLayout)
 
-from .energy import Energy
+from .neutron import Neutron
 from .instrument import GetTau, Instrument
 from .instrument.plot import PlotInstrument
 
@@ -68,8 +68,8 @@ class MainWindow(QMainWindow):
         self.dir_dict = {'Clockwise': 1, 'Counter-Clockwise': -1}
         self.infin_dict = {'ki': 1, 'kf': -1}
         self.edrop_dict = {'energy (meV)': float(self.energy_input.text()),
-                           'wavelength (A)': Energy(wavelength=float(self.energy_input.text())).energy,
-                           'wave vector (A-1)': Energy(wavevector=float(self.energy_input.text())).energy}
+                           'wavelength (A)': Neutron(wavelength=float(self.energy_input.text())).energy,
+                           'wave vector (A-1)': Neutron(wavevector=float(self.energy_input.text())).energy}
         self.method_dict = {'Cooper-Nathans': 0, 'Popovici': 1}
         self.moncor_dict = {'On': 1, 'Off': 0}
 

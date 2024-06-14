@@ -4,13 +4,13 @@
 """
 import numpy as np
 import pytest
-from neutronpy import Energy
+from neutronpy import Neutron
 
 
-def test_energy():
+def test_neutron():
     """Test that the output string is correct
     """
-    energy = Energy(energy=25.)
+    energy = Neutron(energy=25.)
     assert (np.round(energy.energy) == 25.0)
     assert (np.round(energy.wavelength, 4) == 1.8089)
     assert (np.round(energy.wavevector, 3) == 3.473)
@@ -30,27 +30,27 @@ def test_energy():
     assert (energy.values == string_test)
 
 
-def test_energy_setters():
-    """Tests the energy setters
+def test_neutron_setters():
+    """Tests the neutron setters
     """
-    e = Energy(energy=25.)
+    n = Neutron(energy=25.)
 
-    e.energy = 25
+    n.energy = 25
     assert (np.round(e.wavelength, 4) == 1.8089)
 
-    e.wavevector = 3.5
+    n.wavevector = 3.5
     assert (np.round(e.energy, 1) == 25.4)
 
-    e.velocity = 2180
+    n.velocity = 2180
     assert (np.round(e.energy, 1) == 24.8)
 
-    e.temperature = 290
+    n.temperature = 290
     assert (np.round(e.energy, 1) == 25.0)
 
-    e.frequency = 6
+    n.frequency = 6
     assert (np.round(e.energy, 1) == 24.8)
 
-    e.wavelength = 1.9
+    n.wavelength = 1.9
     assert (np.round(e.energy, 1) == 22.7)
 
 

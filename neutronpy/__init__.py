@@ -18,7 +18,7 @@ from .crystal import Material
 from .crystal import Sample
 from .crystal import symmetry
 from .data import Data
-from .energy import Energy
+from .neutron import Neutron
 from .instrument import Instrument
 from .lsfit import Fitter
 

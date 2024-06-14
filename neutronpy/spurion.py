@@ -7,7 +7,7 @@ import warnings
 import numpy as np
 
 from .crystal import Material
-from .energy import Energy
+from .neutron import Neutron
 
 
 def aluminum(energy=14.7):
@@ -23,7 +23,7 @@ def aluminum(energy=14.7):
     rings : str
         Prints a list of the positions in 2theta of the aluminum rings
     """
-    e = Energy(energy=energy)
+    e = Neutron(energy=energy)
     struct = {'name': 'Al',
               'composition': [dict(ion='Al', pos=[0, 0, 0])],
               'debye-waller': False,

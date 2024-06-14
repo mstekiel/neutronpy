@@ -7,7 +7,7 @@ from scipy.constants import h, hbar, k, m_n
 from .constants import JOULES_TO_MEV
 
 
-class Energy(object):
+class Neutron(object):
     u"""Class containing the most commonly used properties of a neutron beam
     given some initial input, e.g. energy, wavelength, velocity, wavevector,
     temperature, or frequency. At least one input must be supplied.
@@ -29,8 +29,8 @@ class Energy(object):
 
     Returns
     -------
-    Energy object
-        The energy object containing the properties of the neutron beam
+    Neutron object
+        The object containing the properties of the neutron beam
 
     Attributes
     ----------
