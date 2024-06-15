@@ -42,10 +42,11 @@ class Atom(object):
         self.Uiso = Uiso
         self.Uaniso = np.matrix(Uaniso)
 
-        if isinstance(scattering_lengths()[ion]['Coh b'], list):
-            b = complex(*scattering_lengths()[ion]['Coh b'])
+        ion_scattering_lengths = scattering_lengths()[ion]
+        if isinstance(ion_scattering_lengths['Coh b'], list):
+            b = complex(*ion_scattering_lengths['Coh b'])
         else:
-            b = scattering_lengths()[ion]['Coh b']
+            b = ion_scattering_lengths['Coh b']
 
         if massNorm is True:
             self.mass = periodic_table()[ion]['mass']
@@ -54,9 +55,9 @@ class Atom(object):
         else:
             self.b = b / 10.
 
-        self.coh_xs = scattering_lengths()[ion]['Coh xs']
-        self.inc_xs = scattering_lengths()[ion]['Inc xs']
-        self.abs_xs = scattering_lengths()[ion]['Abs xs']
+        self.coh_xs = ion_scattering_lengths['Coh xs']
+        self.inc_xs = ion_scattering_lengths['Inc xs']
+        self.abs_xs = ion_scattering_lengths['Abs xs']
 
     def __repr__(self):
         return "Atom('{0}')".format(self.ion)

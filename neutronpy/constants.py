@@ -16,7 +16,7 @@ import json
 import os
 
 
-def magnetic_ion_j():
+def magnetic_ion_j() -> dict:
     r"""Loads j values for Magnetic ions.
 
     Parameters
@@ -34,7 +34,7 @@ def magnetic_ion_j():
         return json.load(infile)
 
 
-def periodic_table():
+def periodic_table() -> dict:
     r"""Loads periodic table database.
     mass, and long-form name.
 
@@ -54,7 +54,7 @@ def periodic_table():
         return json.load(infile)
 
 
-def scattering_lengths():
+def scattering_lengths() -> dict:
     r"""Loads neutron scattering lengths.
 
     Parameters
@@ -73,7 +73,7 @@ def scattering_lengths():
         return json.load(infile)
 
 
-def symmetry():
+def symmetry() -> dict:
     r"""Loads crystal lattice space groups.
 
     Parameters

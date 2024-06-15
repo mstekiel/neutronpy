@@ -79,9 +79,10 @@ class MagneticFormFactor(object):
     def __init__(self, ion):
         self.ion = ion
         try:
-            self.j0 = magnetic_ion_j()[self.ion]['j0']
-            self.j2 = magnetic_ion_j()[self.ion]['j2']
-            self.j4 = magnetic_ion_j()[self.ion]['j4']
+            mag_ion = magnetic_ion_j()
+            self.j0 = mag_ion[self.ion]['j0']
+            self.j2 = mag_ion[self.ion]['j2']
+            self.j4 = mag_ion[self.ion]['j4']
         except ValueError:
             raise ValueError('No such ion was found in database.')
 
