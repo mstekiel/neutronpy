@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 r""" Class to calculate the energy of a neutron in various common units
 """
+from typing import Any, Iterable, Union
 import numpy as np
 from scipy.constants import h, hbar, k, m_n
 
 from .constants import JOULES_TO_MEV
 
+# Neutron unit conversion prefactors (npf)
+_prefactor_energy_from_frequency = h * JOULES_TO_MEV * 1.e12
+_prefactor_energy_from_temperature = k* JOULES_TO_MEV
+_prefactor_energy_from_wavevector = (h ** 2 / (2. * m_n * ((2. * np.pi) / 1.e10) ** 2) * JOULES_TO_MEV)
+_prefactor_energy_from_velocity =  m_n / 2. * JOULES_TO_MEV
+_prefactor_energy_from_wavelength = h ** 2. * 1.0e20 / (2. * m_n ) * JOULES_TO_MEV
 
 class Neutron(object):
     u"""Class containing the most commonly used properties of a neutron beam
@@ -43,7 +50,7 @@ class Neutron(object):
     values
     """
 
-    def __init__(self, energy=None, wavelength=None, velocity=None, wavevector=None, temperature=None, frequency=None):
+    def __init__(self, energy: float=None, wavelength: float=None, velocity: float=None, wavevector: float=None, temperature: float=None, frequency: float=None):
         self._update_values(energy, wavelength, velocity, wavevector, temperature, frequency)
 
     def __str__(self):
@@ -58,45 +65,68 @@ class Neutron(object):
     def __ne__(self, right):
         return not self.__eq__(right)
 
-    def _update_values(self, energy=None, wavelength=None, velocity=None, wavevector=None, temperature=None,
-                       frequency=None):
+    def _update_values(self, energy: float=None, wavelength: float=None, velocity: float=None, wavevector: float=None, temperature: float=None, frequency: float=None):
         try:
             if energy is None:
                 if wavelength is not None:
-                    self.en = h ** 2. / (2. * m_n * (wavelength / 1.0e10) ** 2.) * JOULES_TO_MEV
+                    self.en = self._energy_from_wavelength(wavelength)
                 elif velocity is not None:
-                    self.en = 1. / 2. * m_n * velocity ** 2 * JOULES_TO_MEV
+                    self.en = self._energy_from_velocity(velocity)
                 elif wavevector is not None:
-                    self.en = (h ** 2 / (2. * m_n * ((2. * np.pi / wavevector) / 1.e10) ** 2) * JOULES_TO_MEV)
+                    self.en = self._energy_from_wavevector(wavevector)
                 elif temperature is not None:
-                    self.en = k * temperature * JOULES_TO_MEV
+                    self.en = self._energy_from_temperature(temperature)
                 elif frequency is not None:
-                    self.en = (hbar * frequency * 2. * np.pi * JOULES_TO_MEV * 1.e12)
+                    self.en = self._energy_from_frequency(frequency)
             else:
                 self.en = energy
 
-            if np.any(self.energy == 0.0):
-                if isinstance(self.energy, np.ndarray):
-                    self.wavelen = np.full(self.energy.shape, np.nan)
-                    self.wavevec = np.zeros(self.energy.shape)
-
-                    self.wavelen[self.energy != 0.0] = np.sqrt(h ** 2 / (2. * m_n * self.energy[self.energy !=0] / JOULES_TO_MEV)) * 1.e10
-                    self.wavevec[self.energy != 0.0] = 2. * np.pi / self.wavevec[self.energy != 0.0]
-                else:
-                    self.wavelen = np.nan
-                    self.wavevec = 0.0
-            else:
-                self.wavelen = np.sqrt(h ** 2 / (2. * m_n * self.energy / JOULES_TO_MEV)) * 1.e10
-                self.wavevec = 2. * np.pi / self.wavelength
-
-            self.vel = np.sqrt(2. * self.energy / JOULES_TO_MEV / m_n)
-            self.temp = self.energy / k / JOULES_TO_MEV
-            self.freq = (self.energy / JOULES_TO_MEV / hbar / 2. / np.pi / 1.e12)
+            self.wavelen = self._wavelength_from_energy(self.en)
+            self.wavevec = self._wavevector_from_energy(self.en)
+            self.vel = self._velocity_from_energy(self.en)
+            self.temp = self._temperature_from_energy(self.en)
+            self.freq = self._frequency_form_energy(self.en)
 
         except AttributeError:
             raise AttributeError("""You must define at least one of the \
                                     following: energy, wavelength, velocity, \
                                     wavevector, temperature, frequency""")
+
+
+    def _energy_from_frequency(self, frequency):
+        return frequency * _prefactor_energy_from_frequency
+    
+    def _frequency_form_energy(self, energy):
+        return np.divide(energy, _prefactor_energy_from_frequency)
+
+
+    def _energy_from_temperature(self, temperature):
+        return temperature * _prefactor_energy_from_temperature
+    
+    def _temperature_from_energy(self, energy):
+        return np.divide(energy, _prefactor_energy_from_temperature)
+
+
+    def _energy_from_wavevector(self, wavevector):
+        return wavevector**2 * _prefactor_energy_from_wavevector
+    
+    def _wavevector_from_energy(self, energy):
+        return np.sqrt( np.divide(energy, _prefactor_energy_from_wavevector) )
+
+
+    def _energy_from_velocity(self, velocity):
+        return velocity**2 * _prefactor_energy_from_velocity
+
+    def _velocity_from_energy(self, energy):
+        return np.sqrt( np.divide(energy, _prefactor_energy_from_velocity ) )
+    
+
+    def _energy_from_wavelength(self, wavelength):
+        return np.divide(_prefactor_energy_from_wavelength, wavelength**2)
+
+    def _wavelength_from_energy(self, energy):
+        return np.sqrt( np.divide(_prefactor_energy_from_wavelength, energy) )
+
 
     @property
     def energy(self):
