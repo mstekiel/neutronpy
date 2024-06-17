@@ -7,13 +7,17 @@ from scipy.constants import h, hbar, k, m_n
 
 from .constants import JOULES_TO_MEV
 
-# Neutron unit conversion prefactors (npf)
-_prefactor_energy_from_frequency = h * JOULES_TO_MEV * 1.e12
-_prefactor_energy_from_temperature = k* JOULES_TO_MEV
-_prefactor_energy_from_wavevector = (h ** 2 / (2. * m_n * ((2. * np.pi) / 1.e10) ** 2) * JOULES_TO_MEV)
-_prefactor_energy_from_velocity =  m_n / 2. * JOULES_TO_MEV
-_prefactor_energy_from_wavelength = h ** 2. * 1.0e20 / (2. * m_n ) * JOULES_TO_MEV
+'''
+DEV notes
 
+To provide nice I/O characteristics of the class the main attributes
+are implemented with `property` decorator, and their setters
+are actually calling the update function that takes care of converting
+all other attributes. 
+
+Then, the original values are stored in proteced fields `_attribute`
+and these should be handled only by DEV and taken care of properly.
+'''
 class Neutron(object):
     u"""Class containing the most commonly used properties of a neutron beam
     given some initial input, e.g. energy, wavelength, velocity, wavevector,
@@ -50,6 +54,13 @@ class Neutron(object):
     values
     """
 
+    # Neutron unit conversion prefactors (npf)
+    _prefactor_energy_from_frequency = h * JOULES_TO_MEV * 1.e12
+    _prefactor_energy_from_temperature = k* JOULES_TO_MEV
+    _prefactor_energy_from_wavevector = (h ** 2 / (2. * m_n * ((2. * np.pi) / 1.e10) ** 2) * JOULES_TO_MEV)
+    _prefactor_energy_from_velocity =  m_n / 2. * JOULES_TO_MEV
+    _prefactor_energy_from_wavelength = h ** 2. * 1.0e20 / (2. * m_n ) * JOULES_TO_MEV
+
     def __init__(self, energy: float=None, wavelength: float=None, velocity: float=None, wavevector: float=None, temperature: float=None, frequency: float=None):
         self._update_values(energy, wavelength, velocity, wavevector, temperature, frequency)
 
@@ -69,23 +80,23 @@ class Neutron(object):
         try:
             if energy is None:
                 if wavelength is not None:
-                    self.en = self._energy_from_wavelength(wavelength)
+                    self._energy = self._energy_from_wavelength(wavelength)
                 elif velocity is not None:
-                    self.en = self._energy_from_velocity(velocity)
+                    self._energy = self._energy_from_velocity(velocity)
                 elif wavevector is not None:
-                    self.en = self._energy_from_wavevector(wavevector)
+                    self._energy = self._energy_from_wavevector(wavevector)
                 elif temperature is not None:
-                    self.en = self._energy_from_temperature(temperature)
+                    self._energy = self._energy_from_temperature(temperature)
                 elif frequency is not None:
-                    self.en = self._energy_from_frequency(frequency)
+                    self._energy = self._energy_from_frequency(frequency)
             else:
-                self.en = energy
+                self._energy = energy
 
-            self.wavelen = self._wavelength_from_energy(self.en)
-            self.wavevec = self._wavevector_from_energy(self.en)
-            self.vel = self._velocity_from_energy(self.en)
-            self.temp = self._temperature_from_energy(self.en)
-            self.freq = self._frequency_form_energy(self.en)
+            self._wavelength    = self._wavelength_from_energy(self._energy)
+            self._wavevector    = self._wavevector_from_energy(self._energy)
+            self._velocity      = self._velocity_from_energy(self._energy)
+            self._temperature   = self._temperature_from_energy(self._energy)
+            self._frequency     = self._frequency_form_energy(self._energy)
 
         except AttributeError:
             raise AttributeError("""You must define at least one of the \
@@ -94,44 +105,44 @@ class Neutron(object):
 
 
     def _energy_from_frequency(self, frequency):
-        return frequency * _prefactor_energy_from_frequency
+        return frequency * self._prefactor_energy_from_frequency
     
     def _frequency_form_energy(self, energy):
-        return np.divide(energy, _prefactor_energy_from_frequency)
+        return np.divide(energy, self._prefactor_energy_from_frequency)
 
 
     def _energy_from_temperature(self, temperature):
-        return temperature * _prefactor_energy_from_temperature
+        return temperature * self._prefactor_energy_from_temperature
     
     def _temperature_from_energy(self, energy):
-        return np.divide(energy, _prefactor_energy_from_temperature)
+        return np.divide(energy, self._prefactor_energy_from_temperature)
 
 
     def _energy_from_wavevector(self, wavevector):
-        return wavevector**2 * _prefactor_energy_from_wavevector
+        return wavevector**2 * self._prefactor_energy_from_wavevector
     
     def _wavevector_from_energy(self, energy):
-        return np.sqrt( np.divide(energy, _prefactor_energy_from_wavevector) )
+        return np.sqrt( np.divide(energy, self._prefactor_energy_from_wavevector) )
 
 
     def _energy_from_velocity(self, velocity):
-        return velocity**2 * _prefactor_energy_from_velocity
+        return velocity**2 * self._prefactor_energy_from_velocity
 
     def _velocity_from_energy(self, energy):
-        return np.sqrt( np.divide(energy, _prefactor_energy_from_velocity ) )
+        return np.sqrt( np.divide(energy, self._prefactor_energy_from_velocity ) )
     
 
     def _energy_from_wavelength(self, wavelength):
-        return np.divide(_prefactor_energy_from_wavelength, wavelength**2)
+        return np.divide(self._prefactor_energy_from_wavelength, wavelength**2)
 
     def _wavelength_from_energy(self, energy):
-        return np.sqrt( np.divide(_prefactor_energy_from_wavelength, energy) )
+        return np.sqrt( np.divide(self._prefactor_energy_from_wavelength, energy) )
 
 
     @property
     def energy(self):
         r"""Energy of the neutron in meV"""
-        return self.en
+        return self._energy
 
     @energy.setter
     def energy(self, value):
@@ -140,7 +151,7 @@ class Neutron(object):
     @property
     def wavelength(self):
         r"""Wavelength of the neutron in Å"""
-        return self.wavelen
+        return self._wavelength
 
     @wavelength.setter
     def wavelength(self, value):
@@ -149,7 +160,7 @@ class Neutron(object):
     @property
     def wavevector(self):
         u"""Wavevector k of the neutron in 1/Å"""
-        return self.wavevec
+        return self._wavevector
 
     @wavevector.setter
     def wavevector(self, value):
@@ -158,7 +169,7 @@ class Neutron(object):
     @property
     def temperature(self):
         r"""Temperature of the neutron in Kelvin"""
-        return self.temp
+        return self._temperature
 
     @temperature.setter
     def temperature(self, value):
@@ -167,7 +178,7 @@ class Neutron(object):
     @property
     def frequency(self):
         r"""Frequency of the neutron in THz"""
-        return self.freq
+        return self._frequency
 
     @frequency.setter
     def frequency(self, value):
@@ -176,7 +187,7 @@ class Neutron(object):
     @property
     def velocity(self):
         r"""Velocity of the neutron in m/s"""
-        return self.vel
+        return self._velocity
 
     @velocity.setter
     def velocity(self, value):
