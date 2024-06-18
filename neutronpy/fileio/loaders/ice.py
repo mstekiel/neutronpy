@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ...data import Data
-from ...instrument import Instrument
+from ...instrument import TripleAxisInstrument
 
 
 class Ice(Data):
@@ -52,5 +52,5 @@ class Ice(Data):
             self.Q_keys = {'h': 'QX', 'k': 'QY', 'l': 'QZ', 'e': 'E', 'temp': 'Temp'}
 
         if load_instrument:
-            instrument = Instrument()
+            instrument = TripleAxisInstrument()
             self.instrument = instrument

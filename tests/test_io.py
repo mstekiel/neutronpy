@@ -7,7 +7,7 @@ import os
 import numpy as np
 import pytest
 from mock import patch
-from neutronpy import Data, Instrument, functions
+from neutronpy import Data, TripleAxisInstrument, functions
 from neutronpy.fileio import (detect_filetype, load_data, load_instrument,
                               save_data, save_instrument)
 
@@ -106,7 +106,7 @@ def test_load_instrument_file():
 def test_save_instrument_file():
     """Tests instrument object saving
     """
-    instr = Instrument()
+    instr = TripleAxisInstrument()
     try:
         save_instrument(instr, 'test.out', filetype='ascii', overwrite=True)
         save_instrument(instr, 'test.out', filetype='hdf5', overwrite=True)

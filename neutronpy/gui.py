@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QSizePolicy, QTextEdit,
                              QVBoxLayout)
 
 from .neutron import Neutron
-from .instrument import GetTau, Instrument
+from .instrument import GetTau, TripleAxisInstrument
 from .instrument.plot import PlotInstrument
 
 
@@ -26,7 +26,7 @@ class MyMplCanvas(FigureCanvas):
         self.fig.subplots_adjust(bottom=0.25, left=0.25)
 
         self.axes = self.fig.add_subplot(111)
-        self.axes.hold(True)
+        # self.axes.hold(True)
 
         self.compute_initial_figure(self.axes, qslice, projections, u, v)
 
@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
         self.load_signals()
 
     def load_instrument(self):
-        self.instrument = Instrument()
+        self.instrument = TripleAxisInstrument()
 
         self.instrument.sample.a, self.instrument.sample.b, self.instrument.sample.c = [float(i) for i in
                                                                                         self.abc_input.text().split(
@@ -174,7 +174,7 @@ class MainWindow(QMainWindow):
                                 v=self.instrument.orient2)
         self.qywplot.addWidget(qyw)
 
-        self.text_output.setText(self.instrument.description_string())
+        # self.text_output.setText(self.instrument.description_string())
 
     def load_signals(self):
         self.method_dropdown.currentIndexChanged.connect(self.load_instrument)

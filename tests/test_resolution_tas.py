@@ -145,7 +145,7 @@ def PrefDemo3(H, K, L, W, EXP, p):
 sumIavg = 1646.8109875866667
 sumIstd = 0.67288676280070814 * 2
 
-instr = instrument.Instrument(test=1)
+instr = instrument.TripleAxisInstrument(test=1)
 
 instr.method = 0
 instr.mono.tau = 'PG(002)'
@@ -238,7 +238,7 @@ def test_4d_conv():
     sample = Sample(6, 7, 8, 90, 90, 90)
     sample.u = [1, 0, 0]
     sample.v = [0, 0, 1]
-    EXP = instrument.Instrument(14.7, sample, hcol=[80, 40, 40, 80], vcol=[120, 120, 120, 120], mono='pg(002)',
+    EXP = instrument.TripleAxisInstrument(14.7, sample, hcol=[80, 40, 40, 80], vcol=[120, 120, 120, 120], mono='pg(002)',
                                 ana='pg(002)')
     EXP.moncor = 0
 
@@ -266,7 +266,7 @@ def test_sma_conv():
     sample = Sample(6, 7, 8, 90, 90, 90)
     sample.u = [1, 0, 0]
     sample.v = [0, 0, 1]
-    EXP = instrument.Instrument(14.7, sample, hcol=[80, 40, 40, 80], vcol=[120, 120, 120, 120], mono='pg(002)',
+    EXP = instrument.TripleAxisInstrument(14.7, sample, hcol=[80, 40, 40, 80], vcol=[120, 120, 120, 120], mono='pg(002)',
                                 ana='pg(002)')
     EXP.moncor = 0
 
@@ -290,7 +290,7 @@ def test_sma_conv():
 def test_plotting(mock_show):
     """Test Plotting methods
     """
-    EXP = instrument.Instrument()
+    EXP = instrument.TripleAxisInstrument()
 
     EXP.plot_instrument([1, 0, 0, 0])
     EXP.plot_projections([1, 0, 0, 0])
@@ -356,7 +356,7 @@ def test_constants():
 def test_errors():
     """Test exception handling
     """
-    EXP = instrument.Instrument()
+    EXP = instrument.TripleAxisInstrument()
     EXP.sample.u = [1, 0, 0]
     EXP.sample.v = [2, 0, 0]
     with pytest.raises(ScatteringTriangleError):
@@ -366,7 +366,7 @@ def test_errors():
 def test_calc_res_cases():
     """Test different resolution cases
     """
-    EXP = instrument.Instrument()
+    EXP = instrument.TripleAxisInstrument()
     EXP.sample.shape = np.eye(3)
     EXP.calc_resolution([1, 0, 0, 0])
 
@@ -397,14 +397,14 @@ def test_calc_res_cases():
 def test_projection_calc():
     """Test different cases of resolution ellipse slices/projections
     """
-    EXP = instrument.Instrument()
+    EXP = instrument.TripleAxisInstrument()
     EXP.calc_resolution([1, 0, 0, 0])
     EXP.calc_projections([0, 1, 0, 0])
     EXP.get_resolution_params([0, 1, 0, 0], 'QxQy', 'slice')
     with pytest.raises(InstrumentError):
         EXP.get_resolution_params([1, 1, 0, 0], 'QxQy', 'slice')
 
-    EXP = instrument.Instrument()
+    EXP = instrument.TripleAxisInstrument()
     EXP.get_resolution_params([1, 0, 0, 0], 'QxQy', 'slice')
     EXP.get_resolution_params([1, 0, 0, 0], 'QxQy', 'project')
     EXP.get_resolution_params([1, 0, 0, 0], 'QxW', 'slice')

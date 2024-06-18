@@ -3,7 +3,7 @@ import numpy as np
 
 from ..crystal import Sample
 from ..neutron import Neutron
-from ..instrument import Instrument
+# from ..instrument import Instrument
 from ..instrument.tas_instrument import TripleAxisInstrument
 from ..instrument.tof_instrument import TimeOfFlightInstrument
 
@@ -60,7 +60,7 @@ taz_keys = {'algo': 'method',
 
 
 def load_instrument(filename, filetype='ascii'):
-    r"""Creates Instrument class using input par and cfg files.
+    r"""Creates TripleAxisInstrument class using input par and cfg files.
 
     Parameters
     ----------
@@ -357,7 +357,7 @@ def load_instrument(filename, filetype='ascii'):
         sample.v = [par['bx'], par['by'], par['bz']]
         sample.shape = np.diag([xsam, ysam, zsam])
 
-        setup = Instrument(energy.energy, sample, hcol, vcol,
+        setup = TripleAxisInstrument(energy.energy, sample, hcol, vcol,
                            2 * np.pi / par['dm'], par['etam'],
                            2 * np.pi / par['da'], par['etaa'])
 
@@ -402,7 +402,7 @@ def load_instrument(filename, filetype='ascii'):
                 right = value[1].strip()
                 lines.append([left, right])
 
-        setup = Instrument()
+        setup = TripleAxisInstrument()
 
         for line in lines:
             attr = line[0]
@@ -428,7 +428,7 @@ def load_instrument(filename, filetype='ascii'):
     elif filetype == 'hdf5':
         import h5py
 
-        setup = Instrument()
+        setup = TripleAxisInstrument()
 
         with h5py.File(filename, mode='r') as f:
             instrument = f['instrument']
@@ -454,7 +454,7 @@ def load_instrument(filename, filetype='ascii'):
         taz = tree.getroot()
         reso = taz.find('reso')
 
-        setup = Instrument()
+        setup = TripleAxisInstrument()
 
         values = dict()
 

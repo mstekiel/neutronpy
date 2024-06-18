@@ -5,6 +5,7 @@ from .tas_instrument import TripleAxisInstrument
 from .tof_instrument import TimeOfFlightInstrument
 
 
+# TRASH IT
 class Instrument(object):
     r"""An object that represents either a Triple Axis Spectrometer instrument
     or a Time of Flight Instrument configuration, including a sample.

@@ -14,7 +14,7 @@ use("Agg")
 def gen_std_instr():
     """Generates a known instrument
     """
-    instr = instrument.Instrument(instrument_type="tof")
+    instr = instrument.TimeOfFlightInstrument()
 
     instr.l_pm = 1567
     instr.l_ms = 150
@@ -79,11 +79,11 @@ def test_calc_res_cases():
     """Test calculation of various cases
     """
 
-    instr = instrument.Instrument(instrument_type="tof")
+    instr = instrument.TimeOfFlightInstrument()
     instr.detector.shape = "spherical"
     instr.calc_resolution([1, 0, 0, 0])
 
-    instr = instrument.Instrument(instrument_type="tof")
+    instr = instrument.TimeOfFlightInstrument()
     instr.calc_resolution([1, 0, 0, 0])
 
 
@@ -91,7 +91,7 @@ def test_calc_res_multi_point():
     """Tests calculation of cases with multiple point in `hkle`
     """
 
-    instr = instrument.Instrument(instrument_type="tof")
+    instr = instrument.TimeOfFlightInstrument()
     instr.calc_resolution([1, [0, 1, 1], 0, [0, 1, 2]])
 
     assert (instr.R0.size == 3)

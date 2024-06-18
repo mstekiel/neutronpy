@@ -250,7 +250,7 @@ def GetTau(x, getlabel=False):
                 raise AnalyzerError("Invalid Analyzer crystal type: {0}".format(repr(x)))
 
 
-def _CleanArgs(*varargin):
+def _CleanArgs(*varargin) -> tuple[int, np.ndarray]:
     r"""Reshapes input arguments to be row-vectors. N is the length of the
     longest input argument. If any input arguments are shorter than N, their
     first values are replicated to produce vectors of length N. In any case,

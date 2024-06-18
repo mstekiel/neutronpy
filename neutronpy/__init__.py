@@ -19,8 +19,9 @@ from .crystal import Sample
 from .crystal import symmetry
 from .data import Data
 from .neutron import Neutron
-from .instrument import Instrument
 from .lsfit import Fitter
+# from .instrument import Instrument
+from .instrument import TripleAxisInstrument, TimeOfFlightInstrument
 
 try:
     from . import gui
