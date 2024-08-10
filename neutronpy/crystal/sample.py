@@ -116,7 +116,7 @@ class Sample(Lattice):
     """
 
     def __init__(self, a, b, c, alpha, beta, gamma, u=None, v=None, mosaic=None, vmosaic=None, direct=1,
-                 width=None, height=None, depth=None, shape='rectangular', distance=None):
+                 width=None, height=None, depth=None, shape_type=None, distance=None):
         super(Sample, self).__init__(a, b, c, alpha, beta, gamma)
         if u is not None:
             self._u = np.array(u)
@@ -129,7 +129,7 @@ class Sample(Lattice):
             self.vmosaic = vmosaic
 
         self.dir = direct
-        self.shape_type = shape
+        self.shape_type = shape_type
 
         if width is not None:
             self.width = width

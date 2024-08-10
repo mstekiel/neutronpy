@@ -2,8 +2,11 @@
 r"""Define an instrument for resolution calculations
 
 """
+from xml.etree.ElementTree import QName
 import numpy as np
 from scipy.linalg import block_diag as blkdiag
+
+from .guide import Guide
 
 from ..crystal import Sample
 from ..neutron import Neutron
@@ -13,6 +16,8 @@ from .general import GeneralInstrument
 from .monochromator import Monochromator
 from .plot import PlotInstrument
 from .tools import GetTau, _CleanArgs, _Dummy, _modvec, _scalar, _star, _voigt
+
+from .TW_respy.pop import calc as TW_calc
 
 
 class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
@@ -93,9 +98,18 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
     plot_slice
 
     """
+
+    # MS 
+    # 1. Do not copy parameters that could be defined in inner components here
+    # I' dprefer to not interface raw to multiclass
+    # MAYBE we can allow for a dict to be passed as mono/ana/other and then
+    # constructed from it for each component
+    # 2. I think of instance of TAS as a specifi configuration of the instrument,
+    #    including a choice of kf for constant-kf or ki for constant-ki
     def __init__(self, efixed=14.7, sample=None, hcol=None, vcol=None, mono='PG(002)',
                  mono_mosaic=25, ana='PG(002)', ana_mosaic=25, **kwargs):
 
+        # MS I don't like that at all -> make global dictionary with default values as main config
         if sample is None:
             sample = Sample(6, 7, 8, 90, 90, 90)
             sample.u = [1, 0, 0]
@@ -118,6 +132,51 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         self.detector = _Dummy('Detector')
         self.monitor = _Dummy('Monitor')
         self.guide = _Dummy('Guide')
+
+        # MS: fill some fields to deal with the calc_res
+        # Basically all of this needs to be backimplemented with some default values in the constructrors
+        self.sample.width = 1
+        self.sample.depth = 1
+        self.sample.height = 3
+        self.sample.vmosaic = 27.
+
+        self.detector.shape = 'cylindrical'
+        self.detector.width = 2.5
+        self.detector.height = 2.5
+
+        self.guide.width = 2
+        self.guide.height = 17
+        self.guide.div_v = 15.
+        self.guide.div_h = 15.
+
+        # Now this gets funky, as for optimal focussing the rh/rv will be changed at each measurement point
+        # TW resolution calculation is able to take it on its own, so maybe putting rh/rv = -1 would be good
+        # other wise some protocol has to be established here:
+        # NEW PROTOCOL:
+        # Everything was moved to default values of the Monochromator=Analyzer
+        # What will be kept here is the focussing options of the mono and ana, i.e. whether
+        # they are optimally focussed or constant focus/flat is kept
+        self.mono.rh = 0
+        self.mono.horifoc = True
+        self.mono.horifoc_type = 'optimal'  # should be some nice enum not string
+        self.mono.rv = 0
+        self.mono.vertfoc = True
+        self.mono.vertfoc_type = 'optimal'  # should be some nice enum not string
+        self.mono.depth = 0.2
+        self.mono.width = 22.5
+        self.mono.height = 20.
+        self.mono.vmosaic = 27.
+
+        self.ana.rh = 0
+        self.ana.horifoc = False
+        self.ana.horifoc_type = 'optimal'  # should be some nice enum not string
+        self.ana.rv = 37
+        self.ana.vertfoc = True
+        self.ana.vertfoc_type = 'optimal'  # should be some nice enum not string
+        self.ana.depth = 0.2
+        self.ana.width = 22.5
+        self.ana.height = 9.6
+        self.ana.vmosaic = 27.
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -209,7 +268,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         return self._mono
 
     @mono.setter
-    def mono(self, value):
+    def mono(self, value: Monochromator):
         self._mono = value
 
     @property
@@ -259,7 +318,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         return self._ana
 
     @ana.setter
-    def ana(self, value):
+    def ana(self, value: Analyzer):
         self._ana = value
 
     @property
@@ -366,7 +425,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         return self._sample
 
     @sample.setter
-    def sample(self, value):
+    def sample(self, value: Sample):
         self._sample = value
 
     @property
@@ -409,7 +468,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         return self._guide
 
     @guide.setter
-    def guide(self, value):
+    def guide(self, value: Guide):
         self._guide = value
 
     @property
@@ -540,7 +599,168 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
         return [x, y, z, lattice, rlattice]
 
+    # MS: HArde replacement of the old function for quick testing
     def calc_resolution_in_Q_coords(self, Q, W):
+        '''
+        New resolution function as an interface to Tobi Weber python implementation.
+        '''
+
+        print('Using new calc_res function')
+
+        R0, RM = [], []
+        length = len(Q)
+
+        cm2A = 1e8
+        min2rad = 1./ 60. / 180.*np.pi
+
+
+        for ind in range(length):
+            # Calculate angles and energies
+            w = W[ind]
+            q = Q[ind]
+            ei = self.efixed
+            ef = self.efixed
+
+            infin = -1
+            if hasattr(self, 'infin'):
+                infin = self.infin
+
+            if infin > 0:
+                ef = self.efixed - w
+            else:
+                ei = self.efixed + w
+            ki = Neutron(energy=ei).wavevector
+            kf = Neutron(energy=ef).wavevector
+
+            exp_parameters = {
+                # options
+                "verbose" : False,
+
+                # resolution method, "eck", "pop", or "cn"
+                "reso_method" : "eck",
+
+                # scattering triangle
+                "ki" : ki,
+                "kf" : kf,
+                "E"  : w,
+                "Q"  : q,
+
+                # d spacings
+                "mono_xtal_d" : self.mono.d,
+                "ana_xtal_d"  : self.ana.d,
+
+                # scattering senses
+                "mono_sense"   : self.mono.direct,
+                "sample_sense" : self.sample.direct,
+                "ana_sense"    : self.ana.direct,
+                "mirror_Qperp" : False,     # MS: unchanged, is that implemented in neutronpy?
+
+                # distances in cm
+                "dist_vsrc_mono"   : self.arms[0]*cm2A,
+                "dist_hsrc_mono"   : self.arms[0]*cm2A, # MS: is that self.arms[4]?
+                "dist_mono_sample" : self.arms[1]*cm2A,
+                "dist_sample_ana"  : self.arms[2]*cm2A,
+                "dist_ana_det"     : self.arms[3]*cm2A,
+
+                # shapes
+                "src_shape"    : "rectangular",  # "rectangular" or "circular"
+                "sample_shape" : self.sample.shape_type,  # "cuboid" or "cylindrical"
+                # MS: Here the TW expected values are "rectangular" or "circular"
+                # while respy are 'cylindrical' or 'spherical
+                "det_shape"    : {'cylindrical':'rectangular', 'spherical':'circular'}[self.detector.shape],
+
+                # component sizes
+                #MS: I am not sure whether TW source and RP guide is the same idea
+                "src_w"    : self.guide.width   * cm2A,
+                "src_h"    : self.guide.height  * cm2A,
+                "mono_d"   : self.mono.depth  * cm2A,
+                "mono_w"   : self.mono.width * cm2A,
+                "mono_h"   : self.mono.height  * cm2A,
+                "sample_d" : self.sample.depth   * cm2A,
+                "sample_w" : self.sample.width   * cm2A,
+                "sample_h" : self.sample.height   * cm2A,
+                "ana_d"    : self.ana.depth  * cm2A,
+                "ana_w"    : self.ana.width  * cm2A,
+                "ana_h"    : self.ana.height  * cm2A,
+                "det_w"    : self.detector.width  * cm2A,
+                "det_h"    : self.detector.height  * cm2A,
+
+                # horizontal collimation
+                "coll_h_pre_mono"    : self.hcol[0] * min2rad,
+                "coll_h_pre_sample"  : self.hcol[1] * min2rad,
+                "coll_h_post_sample" : self.hcol[2] * min2rad,
+                "coll_h_post_ana"    : self.hcol[3] * min2rad,
+
+                # vertical collimation
+                "coll_v_pre_mono"    : self.vcol[0] * min2rad,
+                "coll_v_pre_sample"  : self.vcol[1] * min2rad,
+                "coll_v_post_sample" : self.vcol[2] * min2rad,
+                "coll_v_post_ana"    : self.vcol[3] * min2rad,
+
+                # MS why would we need user-defined curvatures?
+                # let's go vanilla and remove (==None) that option to do that automatically with standard lens formula
+                # horizontal focusing
+                "mono_curv_h" : self.mono.rh * cm2A,
+                "ana_curv_h"  : self.ana.rh  * cm2A,
+                "mono_is_curved_h" : self.mono.horifoc,
+                "ana_is_curved_h"  : self.ana.horifoc,
+                "mono_is_optimally_curved_h" : self.mono.horifoc_type=='optimal',
+                "ana_is_optimally_curved_h"  : self.ana.horifoc_type=='optimal',
+                "mono_curv_h_formula" : None,
+                "ana_curv_h_formula" : None,
+
+                # vertical focusing
+                "mono_curv_v" : self.mono.rv * cm2A,
+                "ana_curv_v"  : self.ana.rv  * cm2A,
+                "mono_is_curved_v" : self.mono.vertfoc,
+                "ana_is_curved_v"  : self.ana.vertfoc,
+                "mono_is_optimally_curved_v" : self.mono.vertfoc_type=='optimal',
+                "ana_is_optimally_curved_v"  : self.ana.vertfoc_type=='optimal',
+                "mono_curv_v_formula" : None,
+                "ana_curv_v_formula" : None,
+
+                # guide before monochromator
+                "use_guide"   : False,
+                "guide_div_h" : self.guide.div_h * min2rad,
+                "guide_div_v" : self.guide.div_v * min2rad,
+
+                # horizontal mosaics
+                "mono_mosaic"   : self.mono.mosaic   * min2rad,
+                "sample_mosaic" : self.sample.mosaic * min2rad,
+                "ana_mosaic"    : self.ana.mosaic    * min2rad,
+
+                # vertical mosaics
+                "mono_mosaic_v"   : self.mono.vmosaic   * min2rad,
+                "sample_mosaic_v" : self.sample.vmosaic * min2rad,
+                "ana_mosaic_v"    : self.ana.vmosaic    * min2rad,
+
+                # MS TODO BELOW?
+                # calculate R0 factor (not needed if only the ellipses are to be plotted)
+                "calc_R0" : True,
+
+                # crystal reflectivities; TODO, so far always 1
+                "dmono_refl" : 1.,
+                "dana_effic" : 1.,
+
+                # off-center scattering
+                # WARNING: while this is calculated, it is not yet considered in the ellipse plots
+                "pos_x" : 0. * cm2A,
+                "pos_y" : 0. * cm2A,
+                "pos_z" : 0. * cm2A,
+
+                # vertical scattering in kf, keep "False" for normal TAS
+                "kf_vert" : False,
+            }
+
+            res = TW_calc(exp_parameters)
+
+            R0.append(res['r0'])
+            RM.append(res['reso'])
+
+        return R0, RM
+    
+    # MS: I think this function should be the one to be replaced with Tobi's
+    def calc_resolution_in_Q_coords_old(self, Q, W):
         r"""For a momentum transfer Q and energy transfers W, given experimental
         conditions specified in EXP, calculates the Cooper-Nathans or Popovici
         resolution matrix RM and resolution prefactor R0 in the Q coordinate
@@ -567,6 +787,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         1999-2007, Oak Ridge National Laboratory
 
         """
+        print(f'Calling crQW Q.shape={Q.shape}, W.shape={W.shape}')
         CONVERT1 = np.pi / 60. / 180. / np.sqrt(8 * np.log(2))
         CONVERT2 = 2.072
 
@@ -940,6 +1161,17 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
             Array of the scattering vector and energy transfer at which the
             calculation should be performed
 
+
+        Returns
+        -------
+        R0 : (?)
+            Resolution elipsoid?
+        RMS : (N,4,4)
+            Resolution elipsoid?
+        RM : (?)
+            Volume of the resolution elipsoid?
+
+
         Notes
         -----
             Translated from ResLib, originally authored by A. Zheludev, 1999-2007,
@@ -996,6 +1228,8 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
         self.R0, self.RMS, self.RM = [np.squeeze(item) for item in (R0, RMS, RM)]
 
+        return self.R0, self.RMS, self.RM
+
     def get_angles_and_Q(self, hkle):
         r"""Returns the Triple Axis Spectrometer angles and Q-vector given
         position in reciprocal space
@@ -1045,7 +1279,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
         bb = np.array([[b[0], 0, 0],
                        [b[1] * cosb[2], b[1] * sinb[2], 0],
-                       [b[2] * cosb[1], -b[2] * sinb[1] * cosa[0], 1 / a[2]]])
+                       [b[2] * cosb[1], -b[2] * sinb[1] * cosa[0], 1 / a[2]]], dtype=float)
         bb = bb.T
 
         aspv = np.hstack((self.orient1[np.newaxis].T, self.orient2[np.newaxis].T))
@@ -1090,7 +1324,9 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
         return [A, Q]
 
-
+    # DEV notes
+    # this funciton is horrifying. Too many and repeating formulas.
+    # FIX THE ESIGNATURE OF THE sqw FUNCITON!!!
     def resolution_convolution(self, sqw, pref, nargout, hkle, METHOD='fix', ACCURACY=None, p=None, seed=None):
         r"""Numerically calculate the convolution of a user-defined
         cross-section function with the resolution function for a
@@ -1192,6 +1428,8 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         if METHOD == 'fix':
             if ACCURACY is None:
                 ACCURACY = np.array([7, 0])
+            else:
+                assert len(ACCURACY)==2
             M = ACCURACY
             step1 = np.pi / (2 * M[0] + 1)
             step2 = np.pi / (2 * M[1] + 1)
@@ -1470,3 +1708,6 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         conv = conv + bgr
 
         return conv
+
+
+# TripleAxisInstrument(ana=config['ana'])
