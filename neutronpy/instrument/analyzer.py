@@ -3,6 +3,9 @@ from .monochromator import Monochromator
 
 
 class Analyzer(Monochromator):
+    __doc__ = Monochromator.__doc__
+
+class AnalyzerOld():
     u"""Class containing analyzer information.
 
     Parameters
@@ -29,8 +32,8 @@ class Analyzer(Monochromator):
     depth : float, optional
         Depth of the analyzer in cm. Default: None
 
-    horifoc : int, optional
-        Set to 1 if horizontally focusing analyzer is used. Default: -1
+    horifoc : bool, optional
+        Set to `True` if horizontally focusing analyzer is used. Default: `False`
 
     thickness : float, optional
         Thickness of Analyzer crystal in cm. Required for analyzer
@@ -63,7 +66,7 @@ class Analyzer(Monochromator):
     """
 
     def __init__(self, tau, mosaic, direct=-1, vmosaic=None, height=None, width=None, depth=None, rh=None, rv=None,
-                 horifoc=-1, thickness=None, Q=None):
+                 horifoc=False, thickness=None, Q=None):
         super(Analyzer, self).__init__(tau, mosaic, direct=-1, vmosaic=None, height=None, width=None, depth=None,
                                        rh=None, rv=None)
         if thickness is not None:
@@ -78,3 +81,5 @@ class Analyzer(Monochromator):
                             ['direct', 'vmosaic', 'height', 'width', 'depth', 'rh', 'rv', 'horifoc', 'thickness', 'Q']
                             if getattr(self, key, None) is not None])
         return "Analyzer({0})".format(', '.join([args, kwargs]))
+
+

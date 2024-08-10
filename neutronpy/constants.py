@@ -5,6 +5,7 @@ r"""Useful constants for neutron scattering calculations, including:
 * ``periodic_table()`` : Periodic table values
 * ``scattering_lengths()`` : Neutron scattering lengths
 * ``symmetry()`` : Space group information
+* ``dspacings()`` : Interplanar spacing of monochromator crystals
 * ``JOULES_TO_MEV`` : Joules-to-meV conversion factor
 * ``BOLTZMANN_IN_MEV_K`` : Boltzmann constant in meV/K
 * ``N_A`` : Avogadro constant
@@ -15,6 +16,14 @@ r"""Useful constants for neutron scattering calculations, including:
 import json
 import os
 
+from attr import dataclass
+
+JOULES_TO_MEV = 1. / 1.6021766208e-19 * 1.e3  # Joules to meV
+BOLTZMANN_IN_MEV_K = 8.6173303e-05 * 1.e3  # Boltzmann constant in meV/K
+N_A = 6.022140857e+23
+neutron_mass = 1.674927211e-24  # mass of a neutron in grams
+hbar = 1.054571628e-34  # hbar in m2 kg / s
+e = 1.602176487e-19  # coulombs
 
 def magnetic_ion_j() -> dict:
     r"""Loads j values for Magnetic ions.
@@ -88,12 +97,25 @@ def symmetry() -> dict:
     """
     with open(os.path.join(os.path.dirname(__file__),
                            "database/symmetry.json"), 'r') as infile:
-        return json.load(infile)
+        database = json.load(infile)
 
+    return database
 
-JOULES_TO_MEV = 1. / 1.6021766208e-19 * 1.e3  # Joules to meV
-BOLTZMANN_IN_MEV_K = 8.6173303e-05 * 1.e3  # Boltzmann constant in meV/K
-N_A = 6.022140857e+23
-neutron_mass = 1.674927211e-24  # mass of a neutron in grams
-hbar = 1.054571628e-34  # hbar in m2 kg / s
-e = 1.602176487e-19  # coulombs
+def load_dspacings() -> dict:
+    r"""Loads database of often used monochromator crystal faces.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    dspacings : dict
+        Database of often used crystal faces for monochromators with their interatomic spacing.
+
+    """
+    with open(os.path.join(os.path.dirname(__file__),
+                           "database/dspacings.json"), 'r') as infile:
+        db = json.load(infile)
+
+    return db
