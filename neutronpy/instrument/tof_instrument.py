@@ -200,7 +200,7 @@ class TimeOfFlightInstrument(GeneralInstrument, PlotInstrument):
         sigma_t_md = np.sqrt(tau_m ** 2 + tau_d ** 2)
 
         # Get TwoTheta and Phi from Q
-        theta = np.deg2rad(self.sample.get_two_theta(Q, self.ei.wavelength))
+        theta = np.deg2rad(self.sample.get_tth(Q, self.ei.wavelength))
         phi = np.pi / 2.0 - np.deg2rad(self.sample.get_phi(Q))
 
         # neutron mass in kg

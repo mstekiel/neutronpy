@@ -38,8 +38,7 @@ class GeneralInstrument(object):
         """
         R0, NP = self.get_resolution(hkle)
 
-        [H, K, L, W] = _CleanArgs(*hkle)[1:]
-        hkle = [H, K, L, W]
+        H, K, L, W = hkle
 
         if len(NP.shape) == 2:
             length = 1
@@ -77,9 +76,9 @@ class GeneralInstrument(object):
             self.projections['QxQy_fwhm'][ind, 1] = 2 * hwhm_yp
 
             self.projections['QxQy'][ind] = ellipse(hwhm_xp, hwhm_yp, theta,
-                                                    [np.dot([self.H[ind], self.K[ind], self.L[ind]],
+                                                    [np.dot([H[ind], K[ind], L[ind]],
                                                              self.orient1 / np.linalg.norm(self.orient1) ** 2),
-                                                     np.dot([self.H[ind], self.K[ind], self.L[ind]],
+                                                     np.dot([H[ind], K[ind], L[ind]],
                                                              self.orient2 / np.linalg.norm(self.orient2) ** 2)],
                                                     npts=npts)
 
@@ -90,10 +89,10 @@ class GeneralInstrument(object):
             self.projections['QxQySlice_fwhm'][ind, 1] = 2 * hwhm_yp
 
             self.projections['QxQySlice'][ind] = ellipse(hwhm_xp, hwhm_yp, theta,
-                                                         [np.dot([self.H[ind], self.K[ind], self.L[ind]],
+                                                         [np.dot([H[ind], K[ind], L[ind]],
                                                                  self.orient1 /
                                                                  np.linalg.norm(self.orient1) ** 2),
-                                                          np.dot([self.H[ind], self.K[ind], self.L[ind]],
+                                                          np.dot([H[ind], K[ind], L[ind]],
                                                                  self.orient2 /
                                                                  np.linalg.norm(self.orient2) ** 2)],
                                                                npts=npts)
@@ -105,9 +104,9 @@ class GeneralInstrument(object):
             self.projections['QxW_fwhm'][ind, 1] = 2 * hwhm_yp
 
             self.projections['QxW'][ind] = ellipse(hwhm_xp, hwhm_yp, theta,
-                                                   [np.dot([self.H[ind], self.K[ind], self.L[ind]],
+                                                   [np.dot([H[ind], K[ind], L[ind]],
                                                            self.orient1 / np.linalg.norm(self.orient1) ** 2),
-                                                    self.W[ind]],
+                                                    W[ind]],
                                                    npts=npts)
 
             # Slice through Qx,W plane
@@ -118,9 +117,9 @@ class GeneralInstrument(object):
             self.projections['QxWSlice_fwhm'][ind, 1] = 2 * hwhm_yp
 
             self.projections['QxWSlice'][ind] = ellipse(hwhm_xp, hwhm_yp, theta,
-                                                        [np.dot([self.H[ind], self.K[ind], self.L[ind]],
+                                                        [np.dot([H[ind], K[ind], L[ind]],
                                                                 self.orient1 / np.linalg.norm(self.orient1) ** 2),
-                                                         self.W[ind]],
+                                                         W[ind]],
                                                         npts=npts)
 
             # Projections into Qy, W plane
@@ -130,9 +129,9 @@ class GeneralInstrument(object):
             self.projections['QyW_fwhm'][ind, 1] = 2 * hwhm_yp
 
             self.projections['QyW'][ind] = ellipse(hwhm_xp, hwhm_yp, theta,
-                                                   [np.dot([self.H[ind], self.K[ind], self.L[ind]],
+                                                   [np.dot([H[ind], K[ind], L[ind]],
                                                            self.orient2 / np.linalg.norm(self.orient2) ** 2),
-                                                    self.W[ind]],
+                                                    W[ind]],
                                                    npts=npts)
 
             # Slice through Qy,W plane
@@ -143,9 +142,9 @@ class GeneralInstrument(object):
             self.projections['QyWSlice_fwhm'][ind, 1] = 2 * hwhm_yp
 
             self.projections['QyWSlice'][ind] = ellipse(hwhm_xp, hwhm_yp, theta,
-                                                        [np.dot([self.H[ind], self.K[ind], self.L[ind]],
+                                                        [np.dot([H[ind], K[ind], L[ind]],
                                                                 self.orient2 / np.linalg.norm(self.orient2) ** 2),
-                                                         self.W[ind]],
+                                                         W[ind]],
                                                         npts=npts)
 
     def get_resolution_params(self, hkle, plane, mode='project'):
@@ -168,6 +167,7 @@ class GeneralInstrument(object):
             Parameters for the resolution gaussian
 
         """
+        H, K, L, W = hkle
 
         try:
             A = self.RMS
