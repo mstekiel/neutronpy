@@ -2,254 +2,254 @@
 r"""Handles lattice geometries to find rotations and transformations
 
 """
+from functools import cached_property
 import numpy as np
 
 
 class Lattice(object):
-    u"""Class to describe a generic lattice system defined by lattice six
+    """Class to describe a generic lattice system defined by lattice six
     parameters, (three constants and three angles).
 
     Parameters
     ----------
     a : float
-        Lattice constant *a* in \u212B
+        Unit cell length in angstroms
 
     b : float
-        Lattice constant *b* in \u212B
+        Unit cell length in angstroms
 
     c : float
-        Lattice constant *c* in \u212B
+        Unit cell length in angstroms
 
     alpha : float
-        Lattice angle \U0001D6FC in degrees
+        Angle between b and c in degrees
 
     beta : float
-        Lattice angle \U0001D6FD in degrees
+        Angle between a and c in degrees
 
     gamma : float
-        Lattice angle \U0001D6FE in degrees
-
-    Returns
-    -------
-    lattice : object
-        Object containing lattice information
+        Angle between a and b in degrees
 
     Attributes
     ----------
     a
     b
     c
-    astar
-    bstar
-    cstar
     alpha
     beta
     gamma
-    alpha_rad
-    beta_rad
-    gamma_rad
-    alphastar
-    betastar
-    gammastar
-    alphastar_rad
-    betastar_rad
-    gammastar_rad
+    abc
+    abg
     abg_rad
-    reciprocal_abc
-    reciprocal_abg
-    reciprocal_abg_rad
     lattice_type
-    volume
-    reciprocal_volume
+    Amatrix
+    Bmatrix
     G
     Gstar
-    Bmatrix
+    volume
+    reciprocal_volume
 
-    Methods
-    -------
-    get_d_spacing
-    get_q
-    get_two_theta
-    get_angle_between_planes
+    Conventions
+    -----------
+    1. Lattice vectors are positioned in the Cartesian coordinates as:
+        - a || x
+        - b* || y
+        - c to complete RHS
+    2. The phase factors are (i) exp(i k_xyz r_xyz) and (ii) exp(i Q_hkl r_uvw).
+    3. All matrices, so for both real and reciprocal space, are represented for column vectors.
+    4. `B` matrix contains the 2pi factor. Consequently A.T @ B = 2pi eye(3,3). Transposition due to pt 3.
+    5. Implemented methods should work with arrays assuming the last index representing the `h, k, l` coordinates.
+
+        
+    Transformation notes
+    --------------------
+    A: ndarray((3,3))
+
+        Transforms a real lattice point into an orthonormal coordinates system. Upper triangle matrix.
+        [u,v,w] -> [x,y,z] (Angstroems)
+
+
+    B: ndarray((3,3))
+
+        Transforms a reciprocal lattice point into an orthonormal coordinates system.
+        (h,k,l) -> [kx,ky,kz] (1/Angstroem)
 
     """
 
-    def __init__(self, a, b, c, alpha, beta, gamma):
-        self.abc = [a, b, c]
-        self.abg = [alpha, beta, gamma]
+    def __init__(self, a: float, b: float, c: float, alpha: float, beta: float, gamma: float):
+        self.lattice_parameters = [a,b,c, alpha,beta,gamma]
+        self._update_lattice()
+
+    #################################################################################################
+    # Core methods
+
+    def _update_lattice(self):
+        '''Master function recalculating all matrices involving the lattice parameters.'''
+        a,b,c, alpha,beta,gamma = self.lattice_parameters
+        # A matrix follows convention 1.
+        self._Amatrix = self._constructA(a,b,c, alpha,beta,gamma)
+
+        # B matrix based on the perpendicularity condition to A
+        # To get column representation it needs to be transposed
+        self._Bmatrix = 2*np.pi* np.linalg.inv(self.Amatrix).T
+
+        # Metric tensor of real space
+        self._G = self.Amatrix.T @ self.Amatrix
+
+        # Metric tensor of reciprocal space
+        self._Gstar = self.Bmatrix.T @ self.Bmatrix
+
+    def _constructA(self, a: float, b: float, c: float, alpha: float, beta: float, gamma: float) -> np.ndarray:
+        '''
+        Construct the `A` matrix as crystal axes in orthonormal system, ie a||x, b in xy plane, c accordingly.
+
+        Transforms a real lattice point into an orthonormal coordinates system. Upper triangle matrix.
+        A * [u,v,w] -> [x,y,z] (Angstroems)
+
+        Shortcut to define lattice vectors:
+        >>> a, b, c = A.T
+        '''
+        
+        alpha, beta, gamma = self.abg_rad
+        bx = b*np.cos(gamma)
+        by = b*np.sin(gamma)
+        
+        cx = c*np.cos(beta)
+        cy = c*(np.cos(alpha)-np.cos(gamma)*np.cos(beta))/np.sin(gamma)
+        cz  = np.sqrt(c*c-cx*cx-cy*cy)
+        
+        return np.array([[a,bx,cx],[0,by,cy],[0,0,cz]])
 
     def __repr__(self):
-        return "Lattice({0}, {1}, {2}, {3}, {4}, {5})".format(self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
+        return "<Lattice {0}, {1}, {2}, {3}, {4}, {5}>".format(self.a, self.b, self.c, self.alpha, self.beta, self.gamma)
+
+    #################################################################################################
+    # Defining properties
+    @property
+    def Amatrix(self):
+        '''Crystal axes in orthonormal system, ie a||x, b in xy plane, c accordingly.
+        Upper triangle matrix.
+
+        Transforms a real lattice point into an orthonormal coordinates system.
+        A * [u,v,w] -> [x,y,z] (Angstroems)
+
+
+        Shortcut to define lattice vectors:
+        >>> a, b, c = A.T
+        '''
+        return self._Amatrix
 
     @property
-    def a(self):
-        r"""First lattice constant in Angstrom
-        """
-        return self.abc[0]
+    def Bmatrix(self):
+        '''Reciprocal crystal axes in orthonormal system, perpendicular to real axes.
+        By definition `b* || y`.
+
+        Transforms a reciprocal lattice point into an orthonormal coordinates system.
+        B*(h,k,l) -> [kx,ky,kz]_{crystal} (1/Angstroem)
+
+        Shortcut to define reciprocal lattice vectors:
+        >>> astar, bstar, cstar = B.T
+        '''
+        return self._Bmatrix
+
+    @property
+    def G(self):
+        '''Metric tensor of the real lattice.
+        G = A @ A.T
+        '''
+        return self._G
+
+
+    @property
+    def Gstar(self):
+        '''Metric tensor of the reciprocal lattice.
+        Gstar = B @ B.T
+
+        Allows to calculate products of vector in hkl base.
+        '''
+        return self._Gstar
+
+    #################################################################################################
+    # Properties with setters
+    @property
+    def a(self) -> float:
+        """First lattice parameter `a` in Angstrom."""
+        return self.lattice_parameters[0]
 
     @a.setter
-    def a(self, a):
-        self.abc[0] = a
+    def a(self, new_a: float):
+        self.lattice_parameters[0] = new_a
+        self._update_lattice()
 
     @property
-    def b(self):
-        r"""Second lattice constant in Angstrom
-
-        """
-        return self.abc[1]
+    def b(self) -> float:
+        """Second lattice parameter `b` in Angstrom."""
+        return self.lattice_parameters[1]
 
     @b.setter
-    def b(self, b):
-        self.abc[1] = b
+    def b(self, new_b: float):
+        self.lattice_parameters[1] = new_b
+        self._update_lattice()
 
     @property
-    def c(self):
-        r"""Third lattice constant in Angstrom
-        """
-        return self.abc[2]
-
+    def c(self) -> float:
+        """Third lattice parameter `c` in Angstrom."""
+        return self.lattice_parameters[2]
+    
     @c.setter
-    def c(self, c):
-        self.abc[2] = c
+    def c(self, new_c: float):
+        self.lattice_parameters[2] = new_c
+        self._update_lattice()
+
 
     @property
-    def alpha(self):
-        r"""First lattice angle in degrees
-        """
-        return self.abg[0]
+    def alpha(self) -> float:
+        """First lattice angle `alpha` in degrees."""
+        return self.lattice_parameters[3]
 
     @alpha.setter
-    def alpha(self, alpha):
-        self.abg[0] = alpha
+    def alpha(self, new_alpha):
+        self.lattice_parameters[3] = new_alpha
+        self._update_lattice()
 
     @property
-    def beta(self):
-        r"""Second lattice angle in degrees
-        """
-        return self.abg[1]
+    def beta(self) -> float:
+        """Second lattice angle `beta` in degrees."""
+        return self.lattice_parameters[4]
 
     @beta.setter
-    def beta(self, beta):
-        self.abg[1] = beta
+    def beta(self, new_beta: float):
+        self.lattice_parameters[4] = new_beta
+        self._update_lattice()
 
     @property
-    def gamma(self):
-        r"""Third lattice angle in degrees
-        """
-        return self.abg[2]
+    def gamma(self) -> float:
+        """Third lattice angle `gamma` in degrees."""
+        return self.lattice_parameters[5]
 
     @gamma.setter
-    def gamma(self, gamma):
-        self.abg[2] = gamma
+    def gamma(self, new_gamma: float):
+        self.lattice_parameters[5] = new_gamma
+        self._update_lattice()
 
     @property
-    def alpha_rad(self):
-        r"""First lattice angle in radians
-        """
-        return self.abg_rad[0]
-
+    def abc(self):
+        """Lattice parameters in Angstroem"""
+        return self.lattice_parameters[:3]
+    
     @property
-    def beta_rad(self):
-        r"""Second lattice angle in radians
-        """
-        return self.abg_rad[1]
-
-    @property
-    def gamma_rad(self):
-        r"""Third lattice angle in radians
-        """
-        return self.abg_rad[2]
-
-    @property
-    def astar(self):
-        r"""First inverse lattice constant in inverse Angstrom
-        """
-        return self.b * self.c * np.sin(self.alpha_rad) / self.volume * 2 * np.pi
-
-    @property
-    def bstar(self):
-        r"""Second inverse lattice constant in inverse Angstrom
-        """
-        return self.a * self.c * np.sin(self.beta_rad) / self.volume * 2 * np.pi
-
-    @property
-    def cstar(self):
-        r"""Third inverse lattice constant in inverse Angstrom
-        """
-        return self.a * self.b * np.sin(self.gamma_rad) / self.volume * 2 * np.pi
-
-    @property
-    def alphastar_rad(self):
-        r"""First inverse lattice angle in radians
-        """
-        return np.arccos((np.cos(self.beta_rad) * np.cos(self.gamma_rad) -
-                          np.cos(self.alpha_rad)) /
-                         (np.sin(self.beta_rad) * np.sin(self.gamma_rad)))
-
-    @property
-    def betastar_rad(self):
-        r"""Second inverse lattice angle in radians
-        """
-        return np.arccos((np.cos(self.alpha_rad) *
-                          np.cos(self.gamma_rad) -
-                          np.cos(self.beta_rad)) /
-                         (np.sin(self.alpha_rad) * np.sin(self.gamma_rad)))
-
-    @property
-    def gammastar_rad(self):
-        r"""Third inverse lattice angle in radians
-        """
-        return np.arccos((np.cos(self.alpha_rad) * np.cos(self.beta_rad) -
-                          np.cos(self.gamma_rad)) /
-                         (np.sin(self.alpha_rad) * np.sin(self.beta_rad)))
-
-    @property
-    def alphastar(self):
-        r"""First inverse lattice angle in degrees
-        """
-        return np.rad2deg(self.alphastar_rad)
-
-    @property
-    def betastar(self):
-        r"""First inverse lattice angle in degrees
-        """
-        return np.rad2deg(self.betastar_rad)
-
-    @property
-    def gammastar(self):
-        r"""First inverse lattice angle in degrees
-        """
-        return np.rad2deg(self.gammastar_rad)
-
-    @property
-    def reciprocal_abc(self):
-        r"""Reciprocal lattice constants in inverse Angstrom returned in list
-        """
-        return [self.astar, self.bstar, self.cstar]
-
-    @property
-    def reciprocal_abg(self):
-        r"""Reciprocal lattice angles in degrees returned in list
-        """
-        return [self.alphastar, self.betastar, self.gammastar]
-
-    @property
-    def reciprocal_abg_rad(self):
-        r"""Reciprocal lattice angles in radians returned in list
-        """
-        return [self.alphastar_rad, self.betastar_rad, self.gammastar_rad]
-
+    def abg(self):
+        """Lattice angles in degrees."""
+        return self.lattice_parameters[3:]
+    
     @property
     def abg_rad(self):
-        r"""Lattice angles in radians returned in list
-        """
-        return np.deg2rad(self.abg)
+        """Lattice angles in radians."""
+        return np.radians(self.lattice_parameters[3:])
 
     @property
     def lattice_type(self):
-        r"""Type of lattice determined by the provided lattice constants and angles
-
-        """
+        """Type of lattice determined by the provided lattice constants and angles"""
 
         if len(np.unique(self.abc)) == 3 and len(np.unique(self.abg)) == 3:
             return 'triclinic'
@@ -271,131 +271,133 @@ class Lattice(object):
             raise ValueError('Provided lattice constants and angles do not resolve to a valid Bravais lattice')
 
     @property
-    def volume(self):
-        u"""Volume of the unit cell in \u212B\ :sup:`3`
-
-        """
+    def volume(self) -> float:
+        """Volume of the unit cell in [A^3]."""
         return np.sqrt(np.linalg.det(self.G))
 
     @property
-    def reciprocal_volume(self):
-        u"""Volume of the reciprocal unit cell in (\u212B\ :sup:`-1`\ )\ :sup:`3`
-
-        """
+    def reciprocal_volume(self) -> float:
+        """Volume of the reciprocal unit cell in [1/A^3]. What about the pi factor?"""
         return np.sqrt(np.linalg.det(self.Gstar))
 
-    @property
-    def G(self):
-        r"""Metric tensor of the real space lattice
+    #################################################################################################
+    # Functionalities
+    def get_scalar_product(self, hkl1: np.ndarray, hkl2: np.ndarray):
+        """Returns the scalar product between two lists of vectors.
+        
+        Parameters
+        ----------
+        hkl1 : array_like (3) or (...,3)
+            Vector or array of vectors in reciprocal space.
+        hkl2 : array_like (...,3)
+            List of vectors in reciprocal space.
 
+        Returns
+        -------
+        ret : array_like (...)
+            List of calculated scalar products between vectors.
+
+        Notes
+        -----
+        Takes advantage of the `Gstar=B.T @ B` matrix. Simply does:
+        `Q_hkl1 @ Gstar @ Q_hkl2 == (B @ Q_hkl1).T @ (B @ Q_hkl2) == Q_xyz1 @ Q_xyz2`.
+        Where the last one is in the orthonormal coordinate frame and can be 
+        directly computed.
         """
+        v1v2_cosine = np.einsum('...i,ij,...j->...', hkl1, self.Gstar, hkl2)
 
-        a, b, c = self.abc
-        alpha, beta, gamma = self.abg_rad
+        return v1v2_cosine
+    
+    def get_Q(self, hkl: np.ndarray) -> np.ndarray:
+        '''Returns the magnitude |Q| [1/A] of reciprocal lattice vectors `hkl`.
+                
+        Parameters
+        ----------
+        hkl : array_like (3,...)
+            Reciprocal lattice vector in r.l.u. Signature: `h,k,l = hkl`
 
-        return np.matrix([[a ** 2, a * b * np.cos(gamma), a * c * np.cos(beta)],
-                          [a * b * np.cos(gamma), b ** 2, b * c * np.cos(alpha)],
-                          [a * c * np.cos(beta), b * c * np.cos(alpha), c ** 2]], dtype=float)
+        Returns
+        -------
+        Q : array_like (,...)
+            The magnitude of the reciprocal lattice vectors in [1/A].
+            Shape follows the input signature with reduced first dimension.
 
-    @property
-    def Gstar(self):
-        r"""Metric tensor of the reciprocal lattice
 
-        """
-
-        return np.linalg.inv(self.G) * 4 * np.pi ** 2
-
-    @property
-    def Bmatrix(self):
-        r"""Cartesian basis matrix in reciprocal units such that
-        Bmatrix*Bmatrix.T = Gstar
-
-        """
-
-        return np.matrix([[self.astar, self.bstar * np.cos(self.gammastar_rad),  self.cstar * np.cos(self.betastar_rad)],
-                          [0, self.bstar * np.sin(self.gammastar_rad), -self.cstar * np.sin(self.betastar_rad) * np.cos(self.alpha_rad)],
-                          [0, 0, self.cstar * np.sin(self.betastar_rad) * np.sin(self.alphastar_rad)]], dtype=float)
-
-    def get_d_spacing(self, hkl):
+        Notes
+        -----
+        Calculates the Q vector from the inverse metric tensor: `Q = sqrt(hkl.T @ Gstar @ hkl)`.
+        Alternative method of calculating from B matrix proved to be slower: `Q = norm(B @ hkl)`
+        '''
+        # return np.sqrt(np.einsum('i...,ij,j...->...', hkl, self.Gstar, hkl))
+        return np.sqrt(self.get_scalar_product(hkl, hkl))
+    
+    def get_dspacing(self,hkl: np.ndarray) -> np.ndarray:
         u"""Returns the d-spacing of a given reciprocal lattice vector.
 
         Parameters
         ----------
-        hkl : array_like
-            Reciprocal lattice vector in r.l.u.
+        hkl : array_like (3,...)
+            Reciprocal lattice vector in r.l.u. Signature: `h,k,l = hkl`
 
         Returns
         -------
-        d : float
-            The d-spacing in \u212B
+        d : float (,...)
+            The d-spacing in A.
+        """
+        # DEV NOTES
+        # Method with metric tensor proves to be the fastest.
+        # Alternative tested was determining Q from `norm(B @ hkl)`
+
+        return 2*np.pi / self.get_Q(hkl)
+
+    def get_tth(self, hkl: np.ndarray, wavelength: float) -> np.ndarray:
+        u"""Returns the detector angle two-theta [rad] for a given reciprocal
+        lattice vector [rlu] and incident wavelength [A].
+
+        Parameters
+        ----------
+        hkl : array_like (3,...)
+            Reciprocal lattice vector in r.l.u. Signature: `h,k,l = hkl`
+
+        wavelength : float
+            Wavelength of the incident beam in Angstroem.
+
+        Returns
+        -------
+        two_theta : array_like (,...)
+            The scattering angle two-theta i nradians.
+            Shape follows the input signature with reduced first dimension.
 
         """
-        hkl = np.array(hkl)
 
-        return float(1 / np.sqrt(np.dot(np.dot(hkl, self.Gstar / 4 / np.pi ** 2), hkl)))
-
-    def get_angle_between_planes(self, v1, v2):
-        r"""Returns the angle :math:`\phi` between two reciprocal lattice
+        return 2*np.arcsin( wavelength*self.get_Q(hkl)/4/np.pi )
+    
+    
+    def get_angle_between_planes(self, v1, v2) -> float:
+        r"""Returns the angle :math:`\phi` [rad] between two reciprocal lattice
         vectors (or planes as defined by the vectors normal to the plane).
 
         Parameters
         ----------
-        v1 : array_like
-            First reciprocal lattice vector in units r.l.u.
+        v1 : array_like (3)
+            First reciprocal lattice vector in units r.l.u. 
 
-        v2 : array_like
+        v2 : array_like (3,...)
             Second reciprocal lattice vector in units r.l.u.
 
         Returns
         -------
-        phi : float
-            The angle between v1 and v2 in degrees
+        phi : float (...)
+            The angle between v1 and v2 in radians.
 
+        Notes
+        -----
+        Uses the `Gstar` matrix again and the fact that `Gstar=B B.T` such that
+        `v1.Gstar.v2` is the cosine between v1-v2.
+        Due to rounding errors the cosine(v1,v2) is clipped to [-1,1].
         """
+        v1v2_cosine = np.einsum('i,ij,...j->...', v1, self.Gstar, v2)
+        v1 = self.get_Q(v1)
+        v2 = self.get_Q(v2)
 
-        v1, v2 = np.array(v1), np.array(v2)
-
-        return float(np.rad2deg(np.arccos(np.inner(np.inner(v1, self.Gstar), v2) /
-                                          np.sqrt(np.inner(np.inner(v1, self.Gstar), v1)) /
-                                          np.sqrt(np.inner(np.inner(v2, self.Gstar), v2)))))
-
-    def get_two_theta(self, hkl, wavelength):
-        u"""Returns the detector angle 2\U0001D703 for a given reciprocal
-        lattice vector and incident wavelength.
-
-        Parameters
-        ----------
-        hkl : array_like
-            Reciprocal lattice vector in r.l.u.
-
-        wavelength : float
-            Wavelength of the incident beam in \u212B
-
-        Returns
-        -------
-        two_theta : float
-            The angle of the detector 2\U0001D703 in degrees
-
-        """
-
-        return 2 * np.rad2deg(np.arcsin(wavelength / 2 /
-                                        self.get_d_spacing(hkl)))
-
-    def get_q(self, hkl):
-        u"""Returns the magnitude of *Q* for a given reciprocal lattice
-        vector in \u212B\ :sup:`-1`.
-
-        Parameters
-        ----------
-        hkl : array_like
-            Reciprocal lattice vector in r.l.u.
-
-        Returns
-        -------
-        q : float
-            The magnitude of the reciprocal lattice vector *Q* in
-            \u212B\ :sup:`-1`
-
-        """
-
-        return 2 * np.pi / self.get_d_spacing(hkl)
+        return np.arccos( np.clip(v1v2_cosine / (v1*v2), -1, 1) )

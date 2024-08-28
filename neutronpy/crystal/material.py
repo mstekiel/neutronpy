@@ -368,7 +368,7 @@ class Material(Sample, NuclearStructureFactor, MagneticStructureFactor, PlotMate
         INC_XS = 0
         for atom in self.atoms:
             INC_XS += atom.inc_xs * np.exp(-8 * np.pi ** 2 * atom.Uiso * np.sin(
-                np.deg2rad(self.get_two_theta(atom.pos, self.wavelength) / 2.)) ** 2 / self.wavelength ** 2)
+                np.deg2rad(self.get_tth(atom.pos, self.wavelength) / 2.)) ** 2 / self.wavelength ** 2)
 
         if mass is not None:
             return self.N_atoms(mass) / (4 * np.pi) * INC_XS
