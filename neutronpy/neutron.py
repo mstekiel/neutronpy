@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 r""" Class to calculate the energy of a neutron in various common units
 """
-from typing import Any, Iterable, Union
 import numpy as np
-from scipy.constants import h, hbar, k, m_n
+from scipy.constants import h, k, m_n
 
 from .constants import JOULES_TO_MEV
 
@@ -52,6 +51,23 @@ class Neutron(object):
     temperature
     frequency
     values
+
+    Notes
+    -----
+    Suppoerts use of `np.ndarray`:
+    >>> Neutron(energy=np.arange(1,10).reshape(3,3))
+    ... Energy [meV]    : [[1 2]
+                          [3 4]]
+        Wavelength [A]  : [[9.04456804 6.39547539]
+                           [5.22188379 4.52228402]]
+        Wavevector [1/A]: [[0.69469158 0.98244226]
+                           [1.20324112 1.38938317]]
+        Velocity [m/s]  : [[437.3933608  618.56762294]
+                           [757.5875238  874.7867216 ]]
+        Temperature [K] : [[11.60451803 23.20903605]
+                           [34.81355408 46.4180721 ]]
+        Frequency [THz] : [[0.24179892 0.48359784]
+                           [0.72539677 0.96719569]]
     """
 
     # Neutron unit conversion prefactors (npf)
@@ -119,7 +135,7 @@ class Neutron(object):
 
 
     def _energy_from_wavevector(self, wavevector):
-        return wavevector**2 * self._prefactor_energy_from_wavevector
+        return np.power(wavevector, 2) * self._prefactor_energy_from_wavevector
     
     def _wavevector_from_energy(self, energy):
         return np.sqrt( np.divide(energy, self._prefactor_energy_from_wavevector) )
@@ -133,7 +149,7 @@ class Neutron(object):
     
 
     def _energy_from_wavelength(self, wavelength):
-        return np.divide(self._prefactor_energy_from_wavelength, wavelength**2)
+        return np.divide(self._prefactor_energy_from_wavelength, np.power(wavelength, 2))
 
     def _wavelength_from_energy(self, energy):
         return np.sqrt( np.divide(self._prefactor_energy_from_wavelength, energy) )
@@ -208,12 +224,12 @@ class Neutron(object):
             respective units
         """
         values = [u'',
-                  u'Energy: {0:3.3f} meV'.format(self.energy),
-                  u'Wavelength: {0:3.3f} Å'.format(self.wavelength),
-                  u'Wavevector: {0:3.3f} 1/Å'.format(self.wavevector),
-                  u'Velocity: {0:3.3f} m/s'.format(self.velocity),
-                  u'Temperature: {0:3.3f} K'.format(self.temperature),
-                  u'Frequency: {0:3.3f} THz'.format(self.frequency),
+                  u'Energy [meV]    : {0}'.format(self.energy),
+                  u'Wavelength [A]  : {0}'.format(self.wavelength),
+                  u'Wavevector [1/A]: {0}'.format(self.wavevector),
+                  u'Velocity [m/s]  : {0}'.format(self.velocity),
+                  u'Temperature [K] : {0}'.format(self.temperature),
+                  u'Frequency [THz] : {0}'.format(self.frequency),
                   u'']
 
         return '\n'.join(values)

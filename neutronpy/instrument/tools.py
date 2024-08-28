@@ -11,13 +11,13 @@ from ..neutron import Neutron
 from .exceptions import AnalyzerError, MonochromatorError, ScatteringTriangleError
 
 
-class _Dummy(object):
+class ComponentTemplate(object):
     r"""Empty class for constructing empty objects monitor, guide, and detector
     """
 
-    def __init__(self, name='Dummy', **kwargs):
-        self.name = name
-        self.__dict__.update(kwargs)
+    def __init__(self, **kwargs):
+        for attribute, value in kwargs.items():
+            setattr(self, attribute, value)
 
     def __eq__(self, right):
         self_parent_keys = sorted(list(self.__dict__.keys()))
@@ -40,6 +40,9 @@ class _Dummy(object):
         return "{1}({0})".format(', '.join(
             ['{0}={1}'.format(key, getattr(self, key)) for key in self.__dict__.keys() if
              getattr(self, key, None) is not None and key != 'name']), self.name)
+
+
+
 
 
 def _scalar(v1, v2, lattice):

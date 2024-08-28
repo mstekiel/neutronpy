@@ -24,7 +24,7 @@ class PlotInstrument(object):
 
     """
 
-    def plot_projections(self, hkle, npts=36, dpi=100):
+    def plot_projections(self, hkle: np.ndarray, npts=36, dpi=100):
         r"""Plots resolution ellipses in the QxQy, QxW, and QyW zones
 
         Parameters
@@ -69,7 +69,7 @@ class PlotInstrument(object):
 
         for i in range(length):
             for ax, slice_str, lims in zip([ax1, ax2, ax3], ['QxQy', 'QxW', 'QyW'], [ax1_lims, ax2_lims, ax3_lims]):
-                self.plot_slice(ax, slice_str, projections, self.sample.u, self.sample.v, num=i)
+                self.plot_slice(ax, slice_str, projections, self.sample.orient1, self.sample.orient2, num=i)
 
                 xlim = ax.get_xlim()
                 if xlim[0] < lims[0][0] or i == 0:

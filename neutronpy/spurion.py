@@ -48,7 +48,7 @@ def aluminum(energy=14.7):
         for pos in reflections:
             wavelength_fraction.append('lambda/{0:.0f}'.format(np.round(e.wavelength / wavelength)))
             hkl.append(str(pos))
-            two_theta.append(struct_obj.get_two_theta(pos, wavelength))
+            two_theta.append(struct_obj.get_tth(pos, wavelength))
             str_fac.append(np.abs(struct_obj.calc_nuc_str_fac(pos)) ** 2)
     hkl = np.array(hkl)
     two_theta = np.array(two_theta)

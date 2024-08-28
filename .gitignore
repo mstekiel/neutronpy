@@ -46,3 +46,7 @@ test.out*
 .pytest_cache/
 notes.md
 npy-tutorials.py
+Michal/
+
+# DEV references #
+src_ResLib/
