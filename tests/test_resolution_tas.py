@@ -13,6 +13,40 @@ from neutronpy.instrument.exceptions import *
 
 use('Agg')
 
+def test_resolution_matrices_MS()
+    sample = Sample(4,4,4, 90,90,90, orient1=[1,0,0], orient2=[0,1,0],
+                mosaic=30, mosaic_v=30, shape_type='cuboid')
+
+    mono = instrument.Monochromator(dspacing=3.355, mosaic=45, mosaic_v=45, 
+                        width=12, height=8, depth=0.15,
+                        curvr_h=0, curvr_h_opt=False, curvr_v=10, curvr_v_opt=True)
+
+    ana = instrument.Analyzer(dspacing=3.355, mosaic=45, mosaic_v=45, 
+                        width=12, height=8, depth=0.3,
+                        curvr_h=0, curvr_h_opt=False, curvr_v=0, curvr_v_opt=False)
+
+    in20 = instrument.TripleAxisInstrument(kf=2.662, sample=sample, arms=[10,200,115,85,0],
+                                hcol=[30,30,30,30], vcol=[30,30,30,30],
+                                a3_offset=90, scat_senses=(-1,1,-1))
+
+    in20.mono = mono
+    in20.ana = ana
+
+    """Above parameters give pretty good reproduction of resolution matrix,
+    but the resolution volume is flawed"""
+    np.random.seed(42)
+    N = 5
+    hkle = np.random.rand(4,N)
+    Q = np.random.rand(N)+1.1
+    E = np.random.rand(N)
+
+    hkle = np.transpose([[2,1,0,5]])
+    Q = in20.sample.get_Q(hkle[:3])
+    print('Q', Q)
+
+    print('RES in Q')
+    print( in20.calc_resolution_in_Q_coords(Q, hkle[3]) )
+
 
 def angle2(x, y, z, h, k, l, lattice):
     r"""Function necessary for Prefactor functions
