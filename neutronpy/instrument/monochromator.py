@@ -2,6 +2,8 @@
 import numpy as np
 import warnings
 
+from tomlkit import float_
+
 from ..constants import load_dspacings
 
 class Monochromator(object):
@@ -14,9 +16,6 @@ class Monochromator(object):
 
     mosaic : int
         Mosaic of the crystal [arcmin].
-
-    sense : [+1, -1]
-        Scattering sense of the monochromator.
 
     mosaic_v : int, optional
         Vertical mosaic of the crystal [arcmin].
@@ -37,15 +36,13 @@ class Monochromator(object):
         Vertical curvature radius of the monochromator [cm].
     """
 
-    def __init__(self, dspacing: float=3.355, mosaic: float=30, sense=-1, name: str='custom',
-                 mosaic_v: float=30, width: float=30, height: float=30, depth: float=0.2,
-                 curvr_h: float=0, curvr_h_opt: bool=False,
-                 curvr_v: float=0, curvr_v_opt: bool=False):
+    def __init__(self, dspacing: float, mosaic: float, name: str,
+                 mosaic_v: float, width: float, height: float, depth: float,
+                 curvr_h: float, curvr_v: float):
         # Main properties
         self.dspacing = dspacing
         self.mosaic = mosaic
-        self.sense = sense
-        self._name = name
+        self.name = name
 
         # Then secondary properties
         self.mosaic_v = mosaic_v
@@ -55,25 +52,31 @@ class Monochromator(object):
         self.depth  = depth
 
         # Curvatures
-        self.curvr_h     = curvr_h
-        self.curvr_h_opt = curvr_h_opt
-        self.curvr_v     = curvr_v
-        self.curvr_v_opt = curvr_v_opt
+        self.curvr_h = curvr_h
+        self.curvr_v = curvr_v
+
+    @classmethod
+    def make_default(cls):
+        "Construct a `Monochromator` instance with some default values."
+        return cls(dspacing=3.354, mosaic=30, name='custom',
+                   mosaic_v=30, width=30, height=30, depth=0.2,
+                   curvr_h=0, curvr_v=0)
 
     @classmethod
     def from_name(cls, name: str, **kwargs):
         """Construct `Monochromator` based on the `name` which includes the material
-        and face of the crystal.
+        and face of the crystal. Comes with default values, whic are not changed
+        unless supplid in `kwargs`.
 
         >>> Monochromator.from_name('PG(002)')
-        ... <Monochromator dspacing=3.354, mosaic=30, sense=-1, mosaic_v=30, height=30, width=30, depth=0.2, curvr_h=0, curvr_v=0>
+        ... <Monochromator dspacing=3.354, mosaic=30, mosaic_v=30, height=30, width=30, depth=0.2, curvr_h=0, curvr_v=0>
 
         >>> Monochromator.from_name('Si(111)', mosaic=10)
-        ... <Monochromator dspacing=3.13501, mosaic=10, sense=-1, mosaic_v=30, height=30, width=30, depth=0.2, curvr_h=0, curvr_v=0>
+        ... <Monochromator dspacing=3.13501, mosaic=10, mosaic_v=30, height=30, width=30, depth=0.2, curvr_h=0, curvr_v=0>
 
-        >>> config = dict(mosaic=27, sense=+1, height=15, width=30, curvr_v=30)
+        >>> config = dict(mosaic=27, height=15, width=30, curvr_v=30)
         >>> Monochromator.from_name('PG(004)', **config)
-        ... <Monochromator dspacing=1.677, mosaic=27, sense=1, mosaic_v=30, height=15, width=30, depth=0.2, curvr_h=0, curvr_v=30>
+        ... <Monochromator dspacing=1.677, mosaic=27, mosaic_v=30, height=15, width=30, depth=0.2, curvr_h=0, curvr_v=30>
 
         Parameters
         ----------
@@ -95,39 +98,31 @@ class Monochromator(object):
         
         if name not in kwargs.keys():
             kwargs['name'] = name
+
+        new_mono = cls.make_default()
+        for key, value in kwargs:
+            setattr(new_mono, key, value)
         
         return cls(dspacing=db_dspacings[name], **kwargs)
-
+    
     def __repr__(self):
-        printing_keys = ['name', 'dspacing', 'mosaic', 'sense', 
+        printing_keys = ['name', 'dspacing', 'mosaic', 
                          'mosaic_v', 'height', 'width', 'depth', 
                          'curvr_h', 'curvr_v']
         kwargs = ['{0}={1}'.format(key, getattr(self, key))
                             for key in printing_keys if getattr(self, key, None) is not None]
         return "<Monochromator {0}>".format(', '.join(kwargs))
 
-    def __eq__(self, right):
-        self_parent_keys = sorted(list(self.__dict__.keys()))
-        right_parent_keys = sorted(list(right.__dict__.keys()))
-
-        if not np.all(self_parent_keys == right_parent_keys):
-            return False
-
-        for key, value in self.__dict__.items():
-            right_parent_val = getattr(right, key)
-            if not np.all(value == right_parent_val):
-                return False
-
-        return True
-
-    def __ne__(self, right):
-        return not self.__eq__(right)
     
     ######################################################################
     @property
     def name(self):
-        '''Name of themonochromator.'''
+        '''Name of the monochromator.'''
         return self._name
+    
+    @name.setter
+    def name(self, value: str):
+        self._name = value
     
     ######################################################################
     @property
@@ -156,19 +151,6 @@ class Monochromator(object):
         
         self._tau = value
         self._dspacing = 2*np.pi / value
-
-    ######################################################################
-    @property
-    def sense(self):
-        '''Scattering sense +1 is RHS, -1 is LHS I hope'''
-        return self._sense
-
-    @sense.setter
-    def sense(self, value: int):
-        if value not in [-1, 1]:
-            raise ValueError(f'{value!r} is not a valid sense for {self.__class__.__name__!r}. Try `-1` or `1`.')
-        
-        self._sense = value
 
     ######################################################################
     @property
@@ -299,3 +281,9 @@ class Monochromator(object):
             self.curvr_h = curvr
 
         return curvr
+    
+    def get_tth(self, wavelength: float) -> float:
+        '''Determine scattering angle two-theta for elastic scattering
+        of incoming beam with `wavelength` [A].'''
+
+        return 2*np.arcsin(0.5*wavelength/self.dspacing)
