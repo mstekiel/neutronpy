@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
+# TOML library builtin python>=3.10
+try: import tomllib
+except ModuleNotFoundError: import pip._vendor.tomli as tomllib
+from enum import Enum
+import pathlib
+
 import numpy as np
 
 from ..crystal import Sample
 from ..neutron import Neutron
 # from ..instrument import Instrument
-from ..instrument.tas_instrument import TripleAxisInstrument
+# from ..instrument.tas_instrument import TripleAxisInstrument
 from ..instrument.tof_instrument import TimeOfFlightInstrument
 
 taz_keys = {'algo': 'method',
@@ -58,6 +64,188 @@ taz_keys = {'algo': 'method',
             'v_coll_before_sample': 'vcol[-3]',
             'v_coll_mono': 'vcol[-4]'}
 
+# Format of the neutronpy config dictionary is stored as a template
+# Ideally each dictionary corresponds to a class, that class should have a constructor allowing to make instance from the dictionary.
+with open(pathlib.Path(__file__).parent.joinpath(r'templates\instrument.toml'), "rb") as ff:
+    NPY_CONFIG_INSTRUMENT_DEFAULT = tomllib.load(ff)
+
+class TAS_loader():
+    """Factory loading various datatypes to neutronpy internal format"""
+
+    def __init__():
+        pass
+
+    @classmethod
+    def default(cls):
+        return NPY_CONFIG_INSTRUMENT_DEFAULT
+
+    @classmethod
+    def from_taz(cls, filename):
+        """Convert Takin taz file to neutronpy config dictionary.
+        
+        Parameters
+        ----------
+        filename: str
+            Path and filename of the taz file.
+
+        Notes
+        -----
+        XML format, I think
+        >>> <?xml version=X>
+        >>> <ElementRoot_tag>
+        >>>     <ElementChild1_tag attribute="attribute_value">element1_text</ElementChild1_tag>
+        >>>     <ElementChild2_tag>element2_text</ElementChild2_tag>
+        >>> </ElementRoot_tag>
+
+        >>> root = ElementTree(xml_file_above).get_root()
+        >>> root.tag
+        ... ElementRoot_tag
+        >>> for child_element in root:
+        >>>     print(childe_element.tag, child_element.attrib, child_element.text)
+        ... elementChild1_tag {'attribute': attribute_value} element1_text
+        ... elementChild2_tag {} element2_text
+
+        Takin XML
+            1. Ignoring fields:
+                - simple: for simple resolution calcualtion with deviatins in and out of plane
+                - Violini: anything related to resolution of the TOF spectrometer
+
+        """
+        import xml.etree.ElementTree as et
+
+        taz_root = et.ElementTree(file=filename).getroot()
+        taz_setting = taz_root.find('reso')
+
+        def taz(setting: str, casting_func):
+            setting_element = taz_setting.find(setting)
+            if setting_element is None:
+                raise KeyError(f'{setting!r} not found in TAZ configuration file.')
+            
+            return casting_func(setting_element.text)
+
+        tas_config = dict()
+        
+        ###### Neutronpy specific fields
+        # As per convention, assume constant kf
+        tas_config['fixed_kf'] = True
+        tas_config['fixed_wavevector'] = taz('kf', float)
+        tas_config['name'] = 'from_taz'     # TODO replace with filename
+        tas_config['a3_offset'] = 90        # seems like takin convention 
+
+        ###### Rest of the fields
+        # senses are 01 no -1 1
+        tas_config['scat_senses'] = [-1+2*taz(comp+"_scatter_sense", int) for comp in ['mono','sample','ana']]
+        tas_config['arms'] = [taz("pop_dist_"+v, float) for v in 
+                              ["src_mono","mono_sample","sample_ana","ana_det","mono_monitor"]]
+        tas_config['hcol'] = [taz("h_coll_"+v, float) for v in
+                              ["mono","before_sample","after_sample","ana"]]
+        tas_config['vcol'] = [taz("v_coll_"+v, float) for v in
+                              ["mono","before_sample","after_sample","ana"]]
+
+        ### Source
+        source_config = dict(
+            name='Source',
+            use_guide = bool(taz("use_guide", int)),
+            shape = {0: "circular", 1:"rectangular"}[taz("pop_source_rect", int)],
+            width = taz("pop_src_w", float),
+            height = taz("pop_src_h", float),
+            div_v = taz("pop_guide_divv", float),
+            div_h = taz("pop_guide_divh", float)
+        )
+        tas_config['source'] = source_config
+
+        ### Detector
+        detector_config = dict(
+            name = 'Detector',
+            shape = {0: "circular", 1:"rectangular"}[taz("pop_det_rect", int)],
+            width = taz("pop_det_w", float), 
+            height = taz("pop_det_h", float)
+        )
+        tas_config['detector'] = detector_config
+
+        ### Sample
+        sample_config = dict(
+            a=5, b=5, c=5, alpha=90, beta=90, gamma=90,
+            orient1=[1,0,0], orient2=[0,1,0], 
+            mosaic = taz("sample_mosaic", float),
+            mosaic_v = taz("eck_sample_mosaic_v", float),
+            width1 = taz("pop_sample_wq", float),
+            width2 = taz("pop_sample_wperpq", float),
+            height = taz("pop_sample_h", float), 
+            shape = {0: "cylindrical", 1:"cuboid"}[taz("pop_sample_cuboid", int)],
+        )
+        tas_config['sample'] = sample_config
+
+        ### Monochromator
+        # reflectivity omitted
+        mono_config = dict(
+            name = '_mono',
+            dspacing = taz("mono_d", float),
+            mosaic = taz("mono_mosaic", float), 
+            mosaic_v = taz("eck_mono_mosaic_v", float),
+            width = taz("pop_mono_w", float), 
+            height = taz("pop_mono_h", float),
+            depth = taz("pop_mono_thick", float),
+            curvr_h = taz("pop_mono_curvh", float), 
+            curvr_v = taz("pop_mono_curvv", float)
+        )
+        tas_config["mono"] = mono_config
+
+        ### Analyzer
+        # reflectivity omitted
+        ana_config = dict(
+            name = '_ana',
+            dspacing = taz("ana_d", float),
+            mosaic = taz("ana_mosaic", float), 
+            mosaic_v = taz("eck_ana_mosaic_v", float),
+            width = taz("pop_ana_w", float), 
+            height = taz("pop_ana_h", float),
+            depth = taz("pop_ana_thick", float),
+            curvr_h = taz("pop_ana_curvh", float), 
+            curvr_v = taz("pop_ana_curvv", float)
+        )
+        tas_config["ana"] = ana_config
+
+        # Takin uses flags here
+        MONO_STATE = {0:'flat', 1:'optimal', 2:'curved'}
+        tas_config['focussing'] = dict(
+            mono_h = MONO_STATE[taz("pop_mono_use_curvh", int)], 
+            mono_v = MONO_STATE[taz("pop_mono_use_curvv", int)], 
+            ana_h  = MONO_STATE[taz("pop_ana_use_curvh", int)], 
+            ana_v  = MONO_STATE[taz("pop_ana_use_curvv", int)]
+        )
+        # So if any flags were `0` the curvature needs to be set to inf
+
+        return tas_config
+    
+
+        # for reso_setting in reso:
+        #     key, value = reso_setting.tag, reso_setting.text
+
+        # setup = _Dummy()
+
+
+        # for key, value in taz_keys.items():
+        #     npy_config_dict[value] = reso.find(key).text
+
+        # hcol = [float(npy_config_dict[key]) for key in ['hcol[-4]', 'hcol[-3]', 'hcol[-2]', 'hcol[-1]'] if len(npy_config_dict[key]) > 0]
+        # vcol = [float(npy_config_dict[key]) for key in ['vcol[-4]', 'vcol[-3]', 'vcol[-2]', 'vcol[-1]'] if len(npy_config_dict[key]) > 0]
+        # arms = [float(npy_config_dict[key]) for key in ['arms[-5]', 'arms[-4]', 'arms[-3]', 'arms[-2]', 'arms[-1]'] if
+        #         len(npy_config_dict[key]) > 0]
+
+        # for key, value in zip(['hcol', 'vcol', 'arms'], [hcol, vcol, arms]):
+        #     setattr(setup, key, value)
+
+        # for key, value in npy_config_dict.items():
+        #     if '[' not in key:
+        #         if '.' in key:
+        #             subobj = getattr(setup, key.split('.')[0])
+        #             setattr(subobj, key.split('.')[1], value)
+        #             setattr(setup, key.split('.')[0], subobj)
+        #         else:
+        #             setattr(setup, key, value)
+
+        return npy_config
 
 def load_instrument(filename, filetype='ascii'):
     r"""Creates TripleAxisInstrument class using input par and cfg files.

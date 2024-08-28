@@ -1,0 +1,51 @@
+# All length units are centimeters, angle units are minutes of degrees,
+# except for the sample, where lengths are in Angstroms and angles in degrees.
+#
+# Most fields should corresepond to the class and allow to construct the instance from fields
+
+title = "Neutronpy template for instrument config"
+
+name = "TAS_default"
+fixed_kf = true         # True: constant-kf or False: constant-ki mode of the spectrometer 
+a3_offset = 90          # for comaprisons with Takin
+hcol = [60, 60, 60, 60]
+vcol = [120, 120, 120, 120]
+scattering_senses = [-1, +1, -1]
+
+
+[source]
+width = 6
+height = 12
+div_v = 15
+div_h = 15
+
+[detector]
+shape = "rectangular"       # "rectangular" or "circular": cross section of the detector
+width = 2.5
+height = 10
+
+[monochromator]
+width = 10
+height = 10
+depth = 10
+
+[focussing]
+mono_h = "constant"
+mono_v = "optimal"
+ana_h = "constant"
+ana_v = "constant"
+
+
+[sample]
+orient1 = [1,0,0]
+orient2 = [0,1,0]
+width = 1   # width along the first orienting vector
+depth = 1   # width along the second orienting vector
+height = 1  # height, in the vertical direction
+# Lattice parameters in Angstroem, angles in degrees
+a = 4
+b = 4
+c = 4
+alpha = 90
+beta = 90
+gamma = 90
