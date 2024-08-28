@@ -124,7 +124,7 @@ params = {
     "dist_sample_ana"  : 105.7 * helpers.cm2A,
     "dist_ana_det"     : 23.5  * helpers.cm2A,
 
-    # shapes
+    # shapes TODO implement
     "src_shape"    : "rectangular",  # "rectangular" or "circular"
     "sample_shape" : "cylindrical",  # "cuboid" or "cylindrical"
     "det_shape"    : "rectangular",  # "rectangular" or "circular"
@@ -325,3 +325,9 @@ params_fc = {
     # vertical scattering in kf, keep "False" for normal TAS
     "kf_vert" : True,
 }
+
+
+if __name__ == '__main__':
+    from pop import calc
+
+    print(calc(params))

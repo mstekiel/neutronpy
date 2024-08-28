@@ -33,13 +33,13 @@
 
 import numpy as np
 import numpy.linalg as la
-from . import reso, helpers
 
+from . import reso, helpers
 
 # --------------------------------------------------------------------
 # matrix element indices
 IDX_SRC_Y      = 0;  IDX_SRC_Z      = 1
-IDX_MONO_X     = 2;  IDX_MONO_Y     = 3;  IDX_MONO_Z     = 4;
+IDX_MONO_X     = 2;  IDX_MONO_Y     = 3;  IDX_MONO_Z     = 4
 IDX_SAMPLE_X   = 5;  IDX_SAMPLE_Y   = 6;  IDX_SAMPLE_Z   = 7
 IDX_DET_Y      = 8;  IDX_DET_Z      = 9
 IDX_ANA_X      = 10; IDX_ANA_Y      = 11; IDX_ANA_Z      = 12

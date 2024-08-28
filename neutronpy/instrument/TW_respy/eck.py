@@ -149,7 +149,38 @@ def get_mono_vals(src_w, src_h, mono_w, mono_h,
 #
 # Eckold algorithm combining the mono and ana resolutions
 #
+# TODO make it work on TripleAxisInsturment instead of params dict
 def calc(param):
+    """Determine the resolution parameters based on the Eckold-Sobolev algorithm 
+    implemented by Tobias Weber ILL.
+
+    Parameters
+    ----------
+    param: dict
+        Dictionary with formatted entries containing all information required to 
+        calculate resolution of the triple-axis spectrometer.
+    
+    Returns
+    -------
+    R0:
+        Resolution prefactor
+    RE:
+        Resolution ellipsoid
+    RV:
+        Volume of the resolution ellipsoid.
+
+    Notes
+    -----
+    Resolution is defined as the FHWM of the Gaussian distribution.
+    Thus, resolution ellipsoid containc correlations of the FWHM for different Q-E vector
+    components.
+    """
+    # TODO
+    # 1. I dont want this function to care about the focussing. This is taken care for upstream. 
+    #    Here I want to have fixed mono curvature.
+    # 2. On the other hand I need this function to determine the dimensions of the sample in
+    #    the Qpar Qperp projection.
+    
     ki = param["ki"]
     kf = param["kf"]
     E = param["E"]
