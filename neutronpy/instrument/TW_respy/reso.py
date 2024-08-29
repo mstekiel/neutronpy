@@ -39,19 +39,16 @@ from . import helpers
 g_eps = 1e-8
 
 
-#
-# volume of the ellipsoid
-#
 def ellipsoid_volume(mat):
+    """volume of the ellipsoid"""
     det = np.abs(la.det(mat))
     return 4./3. * np.pi * np.sqrt(1./det)
 
 
-#
-# projects along one axis of the quadric
-# (see [eck14], equ. 57)
-#
+
 def quadric_proj(quadric, idx):
+    """projects along one axis of the quadric
+    (see [eck14], equ. 57)"""
     if np.abs(quadric[idx, idx]) < g_eps:
         return np.delete(np.delete(quadric, idx, axis=0), idx, axis=1)
 
@@ -72,11 +69,9 @@ def quadric_proj(quadric, idx):
     return np.delete(np.delete(ortho_proj, idx, axis=0), idx, axis=1)
 
 
-#
-# projects linear part of the quadric
-# (see [eck14], equ. 57)
-#
 def quadric_proj_vec(vec, quadric, idx):
+    """projects linear part of the quadric
+    (see [eck14], equ. 57)"""
     _col = quadric[:,idx]
     col = np.delete(_col, idx, axis=0)
     if np.abs(_col[idx]) < g_eps:
@@ -88,10 +83,8 @@ def quadric_proj_vec(vec, quadric, idx):
     return v
 
 
-#
-# coherent fwhm widths
-#
 def calc_coh_fwhms(reso):
+    "coherent fwhm widths"
     vecFwhms = []
     for i in range(len(reso)):
         vecFwhms.append(helpers.sig2fwhm / np.sqrt(reso[i,i]))
@@ -99,10 +92,9 @@ def calc_coh_fwhms(reso):
     return np.array(vecFwhms)
 
 
-#
-# incoherent fwhm width
-#
+
 def calc_incoh_fwhms(reso):
+    """incoherent fwhm width"""
     Qres_proj_Qpara = quadric_proj(reso, 3)
     Qres_proj_Qpara = quadric_proj(Qres_proj_Qpara, 2)
     Qres_proj_Qpara = quadric_proj(Qres_proj_Qpara, 1)
@@ -126,10 +118,19 @@ def calc_incoh_fwhms(reso):
         1./np.sqrt(np.abs(Qres_proj_E[0,0])) * helpers.sig2fwhm ])
 
 
-#
-# calculates the characteristics of a given ellipse by principal axis trafo
-#
-def descr_ellipse(quadric):
+
+def descr_ellipse(quadric: np.ndarray):
+    """Calculate the characteristics of a given ellipse matrix
+    
+    Parameters
+    ----------
+    quadric: np.ndarray
+        Matrix `M` of the ellipsoid. It's inverse is the covariance matrix.
+
+    Returns
+    -------
+    [FWHMS, angles, evecs, evals]
+    """
     [ evals, evecs ] = la.eig(quadric)
 
     fwhms = 1./np.sqrt(np.abs(evals)) * helpers.sig2fwhm
@@ -236,10 +237,8 @@ def calc_ellipses(Qres_Q, verbose = True):
 
 
 
-#
-# shows the 2d ellipses
-#
 def plot_ellipses(ellis, verbose = True, plot_results = True, file = "", dpi = 600, ellipse_points = 128, use_tex = False):
+    """show the 2d ellipses"""
     import mpl_toolkits.mplot3d as mplot3d
     import matplotlib
     import matplotlib.pyplot as plot

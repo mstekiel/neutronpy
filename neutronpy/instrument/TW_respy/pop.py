@@ -61,13 +61,11 @@ NUM_KI_COMPS   = 3
 
 
 
-#
-# get matrices for ki axis
-#
 def get_mono_trafos(dist_vsrc_mono, dist_hsrc_mono,
     dist_mono_sample,
     thetam, thetas, inv_curvh, inv_curvv,
     ki, Q_ki, sense = 1., pointlike = False):
+    """get matrices for ki axis"""
 
     sign_z = -1.  # to compare with the calculations by F. Bourdarot
 
@@ -144,10 +142,8 @@ def get_mono_trafos(dist_vsrc_mono, dist_hsrc_mono,
 
 
 
-#
-# unite trafo matrices
-#
 def combine_mono_ana_trafos(Dm, Tm, Am, Bm, Da, Ta, Aa, Ba, pointlike = False):
+    """unite trafo matrices"""
     if pointlike:
         Cm = Dm
         Ca = Da
@@ -214,18 +210,23 @@ def combine_mono_ana_trafos(Dm, Tm, Am, Bm, Da, Ta, Aa, Ba, pointlike = False):
 def calc(param: dict, pointlike: bool=False):
     '''Determine resolution of the measurement.
     
-    Parameters:
-    -----------
+    Parameters
+    ----------
     param:
         Dictionary with vey specific keys and values describing the measurement.
 
     pointlike:
         I think this is about the source, either pointlike or square cross-section.
 
-    Returns:
-    --------
-    res: dict
-        Dictionary with key results of the calculation.
+    Returns
+    -------
+    reso: dict[str, Any]
+        Dictionary with calculation results.
+
+        Most significant entries:
+        - r0: Resolution prefactor
+        - reso: Resolution ellipsoid
+        - res_vol: Volume of the resolution ellipsoid.
     '''
 
     # instrument position

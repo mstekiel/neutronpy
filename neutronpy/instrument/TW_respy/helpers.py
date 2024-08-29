@@ -78,19 +78,15 @@ def get_Q(ki, kf, twotheta):
     return np.sqrt(ki**2. + kf**2. - c*(2.*ki*kf))
 
 
-#
-# angle rotating Q into ki (i.e. angle inside scattering triangle)
-#
 def get_angle_Q_ki(ki, kf, Q):
+    """Angle rotating Q into ki (i.e. angle inside scattering triangle)"""
     c = (ki**2. + Q**2. - kf**2.) / (2.*ki*Q)
     return np.arccos(c)
 
 
-#
-# angle rotating Q into kf (i.e. angle outside scattering triangle),
-# Q_kf = Q_ki + twotheta_s
-#
 def get_angle_Q_kf(ki, kf, Q):
+    """angle rotating Q into kf (i.e. angle outside scattering triangle)
+    Q_kf = Q_ki + twotheta_s"""
     c = (ki**2. - Q**2. - kf**2.) / (2.*kf*Q)
     return np.arccos(c)
 
@@ -106,10 +102,8 @@ def get_mono_angle(k, d):
 #--------------------------------------------------------------------------
 # helpers
 #--------------------------------------------------------------------------
-#
-# z rotation matrix
-#
 def rotation_matrix_3d_z(angle):
+    """Matrix describing right handed rotation around the `z` axis in 3D."""
     s = np.sin(angle)
     c = np.cos(angle)
 
@@ -128,29 +122,28 @@ def rotation_matrix_2d(angle):
         [s,  c]])
 
 
-def mirror_matrix(iSize, iComp):
+def mirror_matrix(iSize: int, iComp: int) -> np.ndarray:
+    """MAtrix of mirror symmetry along selected coordinate x_{n}, `n=iComp`
+    in `iSize` dimensional space."""
     mat = np.identity(iSize)
     mat[iComp, iComp] = -1.
 
-    return mat;
+    return mat
 
 
-#
-# thin lens equation: 1/f = 1/lenB + 1/lenA
-#
 def focal_len(lenBefore, lenAfter):
+    """thin lens equation: 1/f = 1/lenB + 1/lenA"""
     f_inv = 1./lenBefore + 1./lenAfter
     return 1. / f_inv
 
 
-#
-# optimal mono/ana curvature,
-# see e.g.
-#    - (Shirane 2002) p. 66
-#    - or nicos/nicos-core.git/tree/nicos/devices/tas/mono.py in nicos
-#    - or Monochromator_curved.comp in McStas
-#
+
 def foc_curv(lenBefore, lenAfter, tt, vert):
+    """optimal mono/ana curvature,
+    see e.g.
+    - (Shirane 2002) p. 66
+    - or nicos/nicos-core.git/tree/nicos/devices/tas/mono.py in nicos
+    - or Monochromator_curved.comp in McStas"""
     f = focal_len(lenBefore, lenAfter)
     s = np.abs(np.sin(0.5*tt))
 
@@ -162,14 +155,12 @@ def foc_curv(lenBefore, lenAfter, tt, vert):
     return curv
 
 
-#
-# optimal mono/ana curvature, using wavenumber k and crystal d
-# see e.g.
-#    - (Shirane 2002) p. 66
-#    - or nicos/nicos-core.git/tree/nicos/devices/tas/mono.py in nicos
-#    - or Monochromator_curved.comp in McStas
-#
 def foc_curv_2(f, k, d, vert):
+    """optimal mono/ana curvature, using wavenumber k and crystal d
+    see e.g.
+    - (Shirane 2002) p. 66
+    - or nicos/nicos-core.git/tree/nicos/devices/tas/mono.py in nicos
+    - or Monochromator_curved.comp in McStas"""
     #f = focal_len(lenBefore, lenAfter)
     s = np.abs(np.pi / (d * k))
 

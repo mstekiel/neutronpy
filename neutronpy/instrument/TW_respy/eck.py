@@ -48,6 +48,7 @@ def get_mono_vals(src_w, src_h, mono_w, mono_h,
     mono_mosaic, mono_mosaic_v,
     inv_mono_curv_h, inv_mono_curv_v,
     pos_x, pos_y, pos_z, refl):
+    """Determine monochromator and analyzer related matrices"""
 
     # A matrix: equ. 26 in [eck14]
     A = np.identity(3)
@@ -162,12 +163,13 @@ def calc(param):
     
     Returns
     -------
-    R0:
-        Resolution prefactor
-    RE:
-        Resolution ellipsoid
-    RV:
-        Volume of the resolution ellipsoid.
+    reso: dict[str, Any]
+        Dictionary with calculation results.
+
+        Most significant entries:
+        - r0: Resolution prefactor
+        - reso: Resolution ellipsoid
+        - res_vol: Volume of the resolution ellipsoid.
 
     Notes
     -----
