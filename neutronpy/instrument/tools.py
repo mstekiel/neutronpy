@@ -12,8 +12,8 @@ from .exceptions import AnalyzerError, MonochromatorError, ScatteringTriangleErr
 
 
 class ComponentTemplate(object):
-    r"""Empty class for constructing empty objects monitor, guide, and detector
-    """
+    """General object class encompassing only properties of the device,
+     without further functionalities. E.g. source, monitor, detector."""
 
     def __init__(self, **kwargs):
         for attribute, value in kwargs.items():

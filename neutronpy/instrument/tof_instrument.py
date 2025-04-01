@@ -15,7 +15,7 @@ from .guide import Guide
 from .plot import PlotInstrument
 from .tools import _CleanArgs, chop, get_angle_ki_Q, get_kfree
 
-
+# MS: TODO
 class TimeOfFlightInstrument(GeneralInstrument, PlotInstrument):
     r"""An object representing a Time of Flight (TOF) instrument experimental
     configuration, including a sample.

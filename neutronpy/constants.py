@@ -16,8 +16,6 @@ r"""Useful constants for neutron scattering calculations, including:
 import json
 import os
 
-from attr import dataclass
-
 JOULES_TO_MEV = 1. / 1.6021766208e-19 * 1.e3  # Joules to meV
 BOLTZMANN_IN_MEV_K = 8.6173303e-05 * 1.e3  # Boltzmann constant in meV/K
 N_A = 6.022140857e+23

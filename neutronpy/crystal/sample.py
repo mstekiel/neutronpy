@@ -95,7 +95,7 @@ class Sample(Lattice):
     Conventions
     -----------
     1. `Sample` object is position in the `_lab` cartesian coordinate frame. The convention is:
-          - `x` is looking at the incoming beam, i.e. `e_x = - e_ki`
+          - `x` is looking at the incoming beam, i.e. `e_x = -e_ki`
           - 'z' is vertical
           - `y` satisfies previous conditions to make RHS cartesian system.
     2. Since `Sample` inherits from `Lattice` it also inherits the coordinate system of the `Lattice`,

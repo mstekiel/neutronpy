@@ -54,8 +54,8 @@ class Neutron(object):
 
     Notes
     -----
-    Suppoerts use of `np.ndarray`:
-    >>> Neutron(energy=np.arange(1,10).reshape(3,3))
+    Supports use of `np.ndarray`:
+    >>> Neutron(energy=np.arange(1,5).reshape(2,2))
     ... Energy [meV]    : [[1 2]
                           [3 4]]
         Wavelength [A]  : [[9.04456804 6.39547539]
@@ -106,7 +106,8 @@ class Neutron(object):
                 elif frequency is not None:
                     self._energy = self._energy_from_frequency(frequency)
             else:
-                self._energy = energy
+                # Trick to convert list->np.array and treat single values the same
+                self._energy = np.divide(energy, 1)
 
             self._wavelength    = self._wavelength_from_energy(self._energy)
             self._wavevector    = self._wavevector_from_energy(self._energy)
@@ -115,8 +116,8 @@ class Neutron(object):
             self._frequency     = self._frequency_form_energy(self._energy)
 
         except AttributeError:
-            raise AttributeError("""You must define at least one of the \
-                                    following: energy, wavelength, velocity, \
+            raise AttributeError("""You must define at least one of the following:\
+                                    energy, wavelength, velocity, \
                                     wavevector, temperature, frequency""")
 
 
@@ -142,7 +143,7 @@ class Neutron(object):
 
 
     def _energy_from_velocity(self, velocity):
-        return velocity**2 * self._prefactor_energy_from_velocity
+        return np.power(velocity, 2) * self._prefactor_energy_from_velocity
 
     def _velocity_from_energy(self, energy):
         return np.sqrt( np.divide(energy, self._prefactor_energy_from_velocity ) )
@@ -233,3 +234,9 @@ class Neutron(object):
                   u'']
 
         return '\n'.join(values)
+
+# dirty tests
+if __name__ == "__main__":
+    n = Neutron()
+
+    print(n._prefactor_energy_from_frequency)
