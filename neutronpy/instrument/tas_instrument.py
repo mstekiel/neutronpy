@@ -42,6 +42,8 @@ ScatteringSenses = namedtuple('ScatteringSenses', 'mono, sample, ana')
 #       for it that should be looked into:
 #        - https://numpy.org/doc/stable/reference/generated/numpy.einsum_path.html#numpy.einsum_path
 #        - just use tensordot?
+#   [ ] Change the policy of resolutions calculations. Instead of throwing errors when 
+#       the `hkl` is not in the scattering plane, return NaNs.
 
 class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
     u"""An object that represents a Triple Axis Spectrometer (TAS) instrument
@@ -129,7 +131,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
     """
 
     def __init__(self, fixed_kf: bool, fixed_wavevector: float, name: str,
-                 scat_senses: tuple[int,int,int], a3_offset: float,
+                 scat_senses: tuple[int,int,int], a3_offset: float, kf_vert: bool,
                  arms: list[int], hcol: list[int], vcol: list[int], 
                  focussing: dict[str,str], sample: Sample, 
                  mono: Monochromator, ana: Analyzer,
@@ -141,6 +143,8 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         # Operational mode
         self.fixed_kf = fixed_kf
         self.fixed_wavevector = fixed_wavevector
+
+        self.kf_vert = kf_vert   # for CAMEA/BAMBUS liek secondary spectrometer
 
         # Main components of the instrument
         self.source = source
@@ -175,7 +179,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         # Monitor_default =  ComponentTemplate(**monitor_config)
 
         return cls(fixed_kf=True, fixed_wavevector=2.662, name="TAS_default",
-                 scat_senses=(-1,+1,-1), a3_offset=0,
+                 scat_senses=(-1,+1,-1), a3_offset=0, kf_vert=False,
                  arms=[10,200,115,85,0], hcol=[40, 40, 40, 40], vcol=[120, 120, 120, 120], 
                  focussing=focussing_default,
                  sample=Sample.make_default(), 
@@ -216,40 +220,21 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
     def __repr__(self):
         keys_ordered = []
         ret = f"Instrument< {self.name}, const-{'kf'}={self.fixed_wavevector}, a3_offset={self.a3_offset}\n"
-        ret += f"\t scat_senses={self.scat_senses}, arms={self.arms},\n"
+        ret += f"\t scat_senses={self.scat_senses}, kf_vert={self.kf_vert}, arms={self.arms},\n"
         ret += f"\t hcol={self.hcol}, vcol={self.vcol},\n"
         ret += f"\t focussing={self.focussing},\n"
         ret += f"\t sample={self.sample},\n"
         ret += f"\t mono={self.mono},\n"
         ret += f"\t ana={self.ana},\n"
         ret += f"\t source={self.source},\n"
-        ret += f"\t detector={self.detector}\n"
-        ret += ">"
+        ret += f"\t detector={self.detector}>"
         return ret
-
-    def __eq__(self, right):
-        self_parent_keys = sorted(list(self.__dict__.keys()))
-        right_parent_keys = sorted(list(right.__dict__.keys()))
-
-        if not np.all(self_parent_keys == right_parent_keys):
-            return False
-
-        for key, value in self.__dict__.items():
-            right_parent_val = getattr(right, key)
-            if not np.all(value == right_parent_val):
-                print(value, right_parent_val)
-                return False
-
-        return True
-
-    def __ne__(self, right):
-        return not self.__eq__(right)
 
     ###############################################################################
     # TODO clean up the properties
     @property
     def mono(self) -> Monochromator:
-        u"""`Monochromator` of the `TrieplAxisInsturment`."""
+        u"""`Monochromator` of the `TripleAxisInsturment`."""
         return self._mono
 
     @mono.setter
@@ -268,7 +253,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
     @property
     def ana(self) -> Analyzer:
-        "Analyzer of the spectrometer"
+        u"""`Analyzer` of the `TripleAxisInsturment`."""
         return self._ana
 
     @ana.setter
@@ -282,33 +267,13 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
             self._ana = Analyzer(**new_ana)
         else:
             raise ValueError(f'New analyzer must ba a valid instance of {Monochromator.__name__!r}')
-        
-
-    @property
-    def moncor(self):
-        """Selects the type of normalization used to calculate ``R0``
-        If ``moncor=1`` or left undefined, ``R0`` is calculated in
-        normalization to monitor counts (Section II C 2). 1/k\ :sub:`i` monitor
-        efficiency correction is included automatically. To normalize ``R0`` to
-        source flux (Section II C 1), use ``moncor=0``.
-        """
-        return self._moncar
-
-    @moncor.setter
-    def moncor(self, value):
-        self._moncar = value
 
     @property
     def hcol(self):
         r""" The horizontal Soller collimations in minutes of arc (FWHM beam
-        divergence) starting from the in-pile collimator. In case of a
-        horizontally-focusing analyzer ``hcol[2]`` is the angular size of the
-        analyzer, as seen from the sample position. If the beam divergence is
-        limited by a neutron guide, the corresponding element of :attr:`hcol`
-        is the negative of the guide’s *m*-value. For example, for a 58-Ni
-        guide ( *m* = 1.2 ) before the monochromator, ``hcol[0]`` should be
-        -1.2.
-        """
+        divergence) between main TAS elements.
+
+        [source_mono, mono_sample, sample_ana, ana_det]"""
         return self._hcol
 
     @hcol.setter
@@ -318,11 +283,9 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
     @property
     def vcol(self):
         """The vertical Soller collimations in minutes of arc (FWHM beam
-        divergence) starting from the in-pile collimator. If the beam
-        divergence is limited by a neutron guide, the corresponding element of
-        :attr:`vcol` is the negative of the guide’s *m*-value. For example, for
-        a 58-Ni guide ( *m* = 1.2 ) before the monochromator, ``vcol[0]``
-        should be -1.2.
+        divergence) between main TAS elements.
+
+        [source_mono, mono_sample, sample_ana, ana_det]
         """
         return self._vcol
 
@@ -332,10 +295,10 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
     @property
     def arms(self):
-        """distances between the source and monochromator, monochromator
-        and sample, sample and analyzer, analyzer and detector, and
-        monochromator and monitor, respectively. The 5th element is only needed
-        if ``moncor=1``
+        """Lengths of the spectrometer arms, distances between the axes.
+        The 5th element is only needed if ``moncor=1``.
+
+        [source_mono, mono_sample, sample_ana, ana_det, det_monitor] in [cm]
         """
         return self._arms
 
@@ -343,50 +306,9 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
     def arms(self, value):
         self._arms = value
 
-
-    @property
-    def sample(self) -> Sample:
-        """Sample measured at the spectrometer."""
-        return self._sample
-
-    @sample.setter
-    def sample(self, new_sample):
-        """Allowed to set with `Sample` instance or
-        cofig dictionary which is passed to `Sample.__init__`.
-        """
-        if isinstance(new_sample, Sample):
-            self._sample = new_sample
-        elif isinstance(new_sample, dict):
-            self._sample = Sample(**new_sample)
-        else:
-            raise ValueError(f'New sample must ba a valid instance of {Sample.__name__!r}, or dictionary.')
-        
-
-    @property
-    def orient1(self):
-        """Miller indexes of the first reciprocal-space orienting vector for
-        the S coordinate system, as explained in Section II G.
-        """
-        return self._sample.orient1
-
-    @orient1.setter
-    def orient1(self, value):
-        self._sample.orient1 = np.array(value)
-
-    @property
-    def orient2(self):
-        """Miller indexes of the second reciprocal-space orienting vector
-        for the S coordinate system, as explained in Section II G.
-        """
-        return self._sample.orient2
-
-    @orient2.setter
-    def orient2(self, value):
-        self._sample.orient2 = np.array(value)
-
     @property
     def a3_offset(self):
-        """Offset in A3 = sample rotation = sample theta [rad.]"""
+        """Offset in A3 = sample rotation = sample theta [deg]"""
         return self._a3_offset
     
     @a3_offset.setter
@@ -409,6 +331,8 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
     
     @property
     def fixed_kf(self):
+        """Does the spectrometer work in fixed-kf mode?
+        Otherwise it is in fixed-ki mode."""
         return self._fixed_kf
     
     @fixed_kf.setter
@@ -423,13 +347,6 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
         return int(self._fixed_kf) + 1
 
-    @property
-    def infin(self):
-        """a flag set to -1 or left unassigned if the final energy is fixed, or
-        set to +1 in a fixed-incident setup.
-        """
-        # fx is 1 2 ki kf
-        return -2*self.fx + 3
     
     @property
     def fixed_wavevector(self):
@@ -445,13 +362,25 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
     @property
     def fixed_neutron(self):
-        """Properties of the fixed neutron beam, ki/kf, check the `self.fixed_kf` flag."""
+        """`Neutron` representation of the fixed neutron beam, `ki` or `kf`.
+        Check the `self.fixed_kf` flag to see which one it represents."""
         return self._fixed_neutron
+    
+    @property
+    def kf_vert(self) -> bool:
+        """Analyzer scatters beam vertically?"""
+        return self._kf_vert
+    
+    @kf_vert.setter
+    def kf_vert(self, value: bool):
+        if not isinstance(value, bool):
+            raise ValueError(f"{value!r} must be a `bool` type for `kf_vert")
+        
+        self._kf_vert = value
 
     @property
     def source(self):
-        r"""A structure that describes the source
-        """
+        r"""Source of `TripleAxisInstrument`."""
         return self._source
 
     @source.setter
@@ -469,8 +398,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
     @property
     def detector(self):
-        """A structure that describes the detector
-        """
+        """Detector of the `TripleAxisInstrument`."""
         return self._detector
 
     @detector.setter
@@ -484,35 +412,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
             self._detector = ComponentTemplate(**new_obj)
         else:
             raise ValueError(f'New source must ba a valid instance of {ComponentTemplate.__name__!r}')
-        
 
-    @property
-    def Smooth(self):
-        u"""Defines the smoothing parameters as explained in Section II H. Leave this
-        field unassigned if you don’t want this correction done.
-
-        * ``Smooth.E`` is the smoothing FWHM in energy (meV). A small number
-          means “no smoothing along this direction”.
-
-        * ``Smooth.X`` is the smoothing FWHM along the first orienting vector
-          (x0 axis) in Å\ :sup:`-1`.
-
-        * ``Smooth.Y`` is the smoothing FWHM along the y axis in Å\ :sup:`-1`.
-
-        * ``Smooth.Z`` is the smoothing FWHM along the vertical direction in
-          Å\ :sup:`-1`.
-
-        """
-        return self._Smooth
-
-    @Smooth.setter
-    def Smooth(self, value):
-        self._Smooth = value
-
-    # Depracated
-    @property
-    def efixed(self):
-        return self.fixed_neutron.energy
     
     ########################################################################################
     # Methods
@@ -619,7 +519,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         return [x, y, z, lattice, rlattice]
 
     # MS: Hard replacement of the old function for quick testing
-    def calc_resolution_QE(self, Q: np.ndarray, E: np.ndarray) -> tuple[float, np.ndarray, float]:
+    def calc_resolution_QE(self, Q: np.ndarray, E: np.ndarray, method: str) -> tuple[float, np.ndarray, float]:
         """
         New resolution function as an interface to Tobi Weber python implementation.
 
@@ -629,6 +529,8 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
             Momentum transfer amplitude [1/A]. 
         E : array_like
            Energy transfer.
+        method: {'eck', 'pop'}
+            Algorithm used to determine resolution parameters
 
         Notes
         -----
@@ -654,15 +556,14 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
             # Calculate angles and energies
             w = E[ind]
             q = Q[ind]
-            ei = self.efixed
-            ef = self.efixed
+            ei = self.fixed_neutron.energy
+            ef = self.fixed_neutron.energy
 
             # TODO change to kfixed
-            infin = self.infin
-            if infin > 0:
-                ef = self.efixed - w
+            if self.fixed_kf:
+                ei = ei + w
             else:
-                ei = self.efixed + w
+                ef = ef - w
 
             neutron_i = Neutron(energy=ei)
             neutron_f = Neutron(energy=ef)
@@ -689,9 +590,6 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
             exp_parameters = {
                 # options
                 "verbose" : False,
-
-                # resolution method, "eck", "pop", or "cn"
-                "reso_method" : "pop",
 
                 # scattering triangle
                 "ki" : ki,
@@ -801,10 +699,15 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
                 "pos_z" : 0. * cm2A,
 
                 # vertical scattering in kf, keep "False" for normal TAS
-                "kf_vert" : False,
+                "kf_vert" : self.kf_vert,
             }
 
-            res = TW_calc_eck(exp_parameters)
+            if method=='eck':
+                res = TW_calc_eck(exp_parameters)
+            elif method=='pop':
+                res = TW_calc_pop(exp_parameters)
+            else:
+                raise ValueError(f'{method!r} is a unrecognised method of resolution calculation. Try `eck` or `pop`.')
 
             # TODO officialize these corrections
             # 1. kf/ki into the prefactor
@@ -814,10 +717,12 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
         return R0, RE, RV
 
-    def calc_resolution(self, hkle: np.ndarray, base: str='Q', algorithm: str="eck") -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def calc_resolution(self, hkle: np.ndarray, base: str, method: str="eck") -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         r"""For a four-dimensional momentum(in `r.l.u`)-energy(in `meV`) transfer vector `hkle`,
         given the experimental conditions encoded in `self` instance determine
         measurement resolution utilizing the `algorithm` method.
+        TODO return NaN when the hkle cannot be reached, i.e. not in scattering plane,
+        or the scattering triangle is not closed.
 
         Parameters
         ----------
@@ -831,7 +736,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
             `orient12`: in the base of orientation vectors
             `Q`: in the Q_parallel, Q_perp, Qz base, which refer to the scattering vector `hkle[:3]`
 
-        algorithm: 'pop', 'eck'
+        method: 'pop', 'eck'
             Algorithm used to determine the instrumental resolution.
 
         Returns
@@ -876,7 +781,8 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         E = hkle[...,3]
         Q = self.sample.get_Q(hkl)
 
-        R0, RE, RV = self.calc_resolution_QE(Q, E)
+        # MAIN CALCULATION
+        R0, RE, RV = self.calc_resolution_QE(Q, E, method=method)
 
         # Apply requested base transformation
         if base=='orient12':
@@ -903,22 +809,6 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
                 self.logger.debug(f"Transforming resolution ellipsoid from `Q` to `hkl` with matrix:\n {T}")
                 RE[ind] = T.T @ RE[ind] @ T
 
-        # This smoothing originates from ResLib sect. II H, pp13, Eq 15 and 16.
-        # In principle it applies to a situation when the experimental data was smoothed to 
-        # reduce the number of points on which the resolution is calculated.
-        # I don't see how this applies here yet
-        # e = np.identity(4)
-        # for i in range(length):
-        #     if hasattr(self, 'Smooth'):
-        #         if self.Smooth.X:
-        #             mul = np.diag([1 / (self.Smooth.X ** 2 / 8 / np.log(2)),
-        #                            1 / (self.Smooth.Y ** 2 / 8 / np.log(2)),
-        #                            1 / (self.Smooth.E ** 2 / 8 / np.log(2)),
-        #                            1 / (self.Smooth.Z ** 2 / 8 / np.log(2))])
-        #             R0[i] = R0[i] / np.sqrt(np.linalg.det(np.matrix(e) / np.matrix(RMS[i]))) * np.sqrt(
-        #                 np.linalg.det(np.matrix(e) / np.matrix(mul) + np.matrix(e) / np.matrix(RMS[i])))
-        #             RMS[i] = np.matrix(e) / (
-        #                 np.matrix(e) / np.matrix(mul) + np.matrix(e) / np.matrix(RMS[i]))
 
         return R0, RE, RV
     
@@ -962,9 +852,11 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
         # Kinematic equations
         kfix = self.fixed_neutron.wavevector
-        delta_Q = self.fixed_neutron._wavevector_from_energy(energy=E)   # Use the beam just to call the conversion function
-        kisq = kfix**2 + int(self.fx - 1) * delta_Q**2
-        kfsq = kfix**2 - int(2 - self.fx) * delta_Q**2
+        delta_Q = Neutron(energy=np.abs(E)).wavevector
+        kisq = kfix**2 + int(self.fixed_kf) * delta_Q**2
+        kfsq = kfix**2 + (int(self.fixed_kf) - 1) * delta_Q**2
+
+        # Can we close the scattering triangle with the requested energy?
         if np.sum(kisq < 0):
             raise ScatteringTriangleError(f'Requested energy too low to close the triangle')
         if np.sum(kfsq < 0):
@@ -984,7 +876,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
 
         # A4 from the scattering triangle
         Q = self.sample.get_Q(hkl)
-        triangle_cos = (ki ** 2 + kf ** 2 - Q ** 2) / (2 * ki * kf)
+        triangle_cos = (ki**2 + kf**2 - Q**2) / (2*ki*kf)
 
         # Check if the scattering triangle can be closed
         invalid_st_1 = np.abs(triangle_cos) > 1
@@ -1067,12 +959,14 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         Sqw = np.zeros(hkle[...,0].shape)
 
         rnd_generator = np.random.default_rng(seed=seed)
+        # Going through each point in the grid
         for ind in np.ndindex(hkle[...,0].shape):
             hkle0 = hkle[ind]
             covariance = np.linalg.inv(RE[ind])
             ellipsoid_samples = rnd_generator.multivariate_normal(mean=hkle0, cov=covariance, size=Nsamples)
 
-            # Average the value of Sqw over the resolutio nellipsoid region
+            # Average the value of Sqw over the resolution ellipsoid region
+            # This is the heaviest calculations
             Sqw[ind] = np.average(Sqw_fast(ellipsoid_samples, Sqw_pars))
 
         # After getting convolved values there are the prefactor and resolution ellipsoid volume factor to correct,
@@ -1080,211 +974,18 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         Sqw *= Sqw_slow(hkle, Sqw_pars) * R0 * RV
 
         return Sqw
+    
+    def resolution_convolution_single_mode(self,
+                                           hkle: np.ndarray, 
+                                           Sqw_fast: Callable[[np.ndarray, Any], np.ndarray], 
+                                           Sqw_slow: Callable[[np.ndarray, Any], np.ndarray], 
+                                           Sqw_pars: Any, 
+                                           method = str, 
+                                           Nsamples=1000, seed=None):
+        
+        return
 
-    # DEV notes
-    # this funciton is horrifying. Too many and repeating formulas.
-    # FIX THE ESIGNATURE OF THE sqw FUNCITON!!!
-    def resolution_convolution_old(self, sqw, pref, nargout, hkle, METHOD='fix', ACCURACY=None, p=None, seed=None):
-        r"""Numerically calculate the convolution of a user-defined
-        cross-section function with the resolution function for a
-        3-axis neutron scattering experiment.
-
-        Parameters
-        ----------
-        sqw : func, signature: `sqw(H1, K1, L1, W1, p)`
-            User-supplied "fast" model cross section.
-
-        pref : func
-            User-supplied "slow" cross section prefactor and background
-            function.
-
-        nargout : int
-            Number of arguments returned by the pref function
-
-        hkle : tup
-            Tuple of H, K, L, and W, specifying the wave vector and energy
-            transfers at which the convolution is to be calculated (i.e.
-            define $\mathbf{Q}_0$). H, K, and L are given in reciprocal
-            lattice units and W in meV.
-
-        EXP : obj
-            Instrument object containing all information on experimental setup.
-
-        METHOD : str
-            Specifies which 4D-integration method to use. 'fix' (Default):
-            sample the cross section on a fixed grid of points uniformly
-            distributed $\phi$-space. 2*ACCURACY[0]+1 points are sampled
-            along $\phi_1$, $\phi_2$, and $\phi_3$, and 2*ACCURACY[1]+1
-            along $\phi_4$ (vertical direction). 'mc': 4D Monte Carlo
-            integration. The cross section is sampled in 1000*ACCURACY
-            randomly chosen points, uniformly distributed in $\phi$-space.
-
-        ACCURACY : array(2) or int
-            Determines the number of sampling points in the integration.
-
-        p : list
-            A parameter that is passed on, without change to sqw and pref.
-
-        Returns
-        -------
-        conv : array
-            Calculated value of the cross section, folded with the resolution
-            function at the given $\mathbf{Q}_0$
-
-        Notes
-        -----
-        Translated from ResLib 3.4c, originally authored by A. Zheludev,
-        1999-2007, Oak Ridge National Laboratory
-
-        """
-        R0, RMS, RV = self.calc_resolution(hkle, base='hkl')
-
-        H, K, L, W = hkle.T
-        [length, H, K, L, W] = _CleanArgs(H, K, L, W)
-        [xvec, yvec, zvec] = self._StandardSystem()[:3]
-
-        Mxx = RMS[:, 0, 0]
-        Mxy = RMS[:, 0, 1]
-        Mxw = RMS[:, 0, 3]
-        Myy = RMS[:, 1, 1]
-        Myw = RMS[:, 1, 3]
-        Mzz = RMS[:, 2, 2]
-        Mww = RMS[:, 3, 3]
-
-        Mxx -= Mxw ** 2. / Mww
-        Mxy -= Mxw * Myw / Mww
-        Myy -= Myw ** 2. / Mww
-        MMxx = Mxx - Mxy ** 2. / Myy
-
-        detM = MMxx * Myy * Mzz * Mww
-
-        tqz = 1. / np.sqrt(Mzz)
-        tqx = 1. / np.sqrt(MMxx)
-        tqyy = 1. / np.sqrt(Myy)
-        tqyx = -Mxy / Myy / np.sqrt(MMxx)
-        tqww = 1. / np.sqrt(Mww)
-        tqwy = -Myw / Mww / np.sqrt(Myy)
-        tqwx = -(Mxw / Mww - Myw / Mww * Mxy / Myy) / np.sqrt(MMxx)
-
-        inte = sqw(hkle, p)
-        [modes, points] = inte.shape
-
-        if pref is None:
-            prefactor = np.ones((modes, points))
-            bgr = 0
-        else:
-            if nargout == 2:
-                [prefactor, bgr] = pref(hkle, p)
-            elif nargout == 1:
-                prefactor = pref(hkle, p)
-                bgr = 0
-            else:
-                raise ValueError('Invalid number or output arguments in prefactor function')
-
-
-        # See ResLib manual eq 20 and description around it.
-        # DEVNOTES
-        # 1. So ResLib uses this tangent mapping, since the uniform mapping there will result in Lorentzian
-        #    mapping in QE space, which is good approximation of the Gaussian. 
-        #    But with the possibilities of numpy, can't we directly probe the gaussian distribution somehow?
-        if METHOD == 'fix':
-            if ACCURACY is None:
-                ACCURACY = np.array([7, 0])
-            else:
-                assert len(ACCURACY)==2
-            M = ACCURACY
-            step1 = np.pi / (2 * M[0] + 1)
-            step2 = np.pi / (2 * M[1] + 1)
-            dd1 = np.linspace(-np.pi / 2 + step1 / 2, np.pi / 2 - step1 / 2, (2 * M[0] + 1))
-            dd2 = np.linspace(-np.pi / 2 + step2 / 2, np.pi / 2 - step2 / 2, (2 * M[1] + 1))
-            convs = np.zeros((modes, length))
-            conv = np.zeros(length)
-            [cw, cx, cy] = np.meshgrid(dd1, dd1, dd1, indexing='ij')
-            tx = np.tan(cx)
-            ty = np.tan(cy)
-            tw = np.tan(cw)
-            tz = np.tan(dd2)
-            norm = np.exp(-0.5 * (tx ** 2 + ty ** 2)) * (1 + tx ** 2) * (1 + ty ** 2) * np.exp(-0.5 * (tw ** 2)) * (
-                1 + tw ** 2)
-            normz = np.exp(-0.5 * (tz ** 2)) * (1 + tz ** 2)
-
-            for iz in range(len(tz)):
-                for i in range(length):
-                    dQ1 = tqx[i] * tx
-                    dQ2 = tqyy[i] * ty + tqyx[i] * tx
-                    dW = tqwx[i] * tx + tqwy[i] * ty + tqww[i] * tw
-                    dQ4 = tqz[i] * tz[iz]
-                    H1 = H[i] + dQ1 * xvec[0] + dQ2 * yvec[0] + dQ4 * zvec[0]
-                    K1 = K[i] + dQ1 * xvec[1] + dQ2 * yvec[1] + dQ4 * zvec[1]
-                    L1 = L[i] + dQ1 * xvec[2] + dQ2 * yvec[2] + dQ4 * zvec[2]
-                    W1 = W[i] + dW
-                    hkle1 = np.transpose([H1,K1,L1,W1])
-                    inte = sqw(hkle1, p)
-                    for j in range(modes):
-                        add = inte[j, :] * norm * normz[iz]
-                        convs[j, i] = convs[j, i] + np.sum(add)
-
-                    conv[i] = np.sum(convs[:, i] * prefactor[:, i])
-
-            conv = conv * step1 ** 3 * step2 / np.sqrt(detM)
-            if M[1] == 0:
-                conv *= 0.79788
-            if M[0] == 0:
-                conv *= 0.79788 ** 3
-
-        elif METHOD == 'mc':
-            if isinstance(ACCURACY, (list, np.ndarray, tuple)):
-                if len(ACCURACY) == 1:
-                    ACCURACY = ACCURACY[0]
-                else:
-                    raise ValueError('ACCURACY must be an int when using Monte Carlo method: {0}'.format(ACCURACY))
-            if ACCURACY is None:
-                ACCURACY = 10
-            M = ACCURACY
-            convs = np.zeros((modes, length))
-            conv = np.zeros(length)
-            for i in range(length):
-                for MonteCarlo in range(M):
-                    if seed is not None:
-                        np.random.seed(seed)
-                    r = np.random.randn(4, 1000) * np.pi - np.pi / 2
-                    cx = r[0, :]
-                    cy = r[1, :]
-                    cz = r[2, :]
-                    cw = r[3, :]
-                    tx = np.tan(cx)
-                    ty = np.tan(cy)
-                    tz = np.tan(cz)
-                    tw = np.tan(cw)
-                    norm = np.exp(-0.5 * (tx ** 2 + ty ** 2 + tz ** 2 + tw ** 2)) * (1 + tx ** 2) * (1 + ty ** 2) * (
-                        1 + tz ** 2) * (1 + tw ** 2)
-                    dQ1 = tqx[i] * tx
-                    dQ2 = tqyy[i] * ty + tqyx[i] * tx
-                    dW = tqwx[i] * tx + tqwy[i] * ty + tqww[i] * tw
-                    dQ4 = tqz[i] * tz
-                    H1 = H[i] + dQ1 * xvec[0] + dQ2 * yvec[0] + dQ4 * zvec[0]
-                    K1 = K[i] + dQ1 * xvec[1] + dQ2 * yvec[1] + dQ4 * zvec[1]
-                    L1 = L[i] + dQ1 * xvec[2] + dQ2 * yvec[2] + dQ4 * zvec[2]
-                    W1 = W[i] + dW
-                    hkle1 = np.transpose([H1,K1,L1,W1])
-                    inte = sqw(hkle1, p)
-                    for j in range(modes):
-                        add = inte[j, :] * norm
-                        convs[j, i] = convs[j, i] + np.sum(add)
-
-                    conv[i] = np.sum(convs[:, i] * prefactor[:, i])
-
-            conv = conv / M / 1000 * np.pi ** 4. / np.sqrt(detM)
-
-        else:
-            raise ValueError('Unknown METHOD: {0}. Valid options are: "fix",  "mc"'.format(METHOD))
-
-        conv *= R0
-        conv += bgr
-
-        return conv
-
-    def resolution_convolution_SMA(self, sqw, pref, nargout, hkle, METHOD='fix', ACCURACY=None, p=None, seed=None):
+    def resolution_convolution_SMA_old(self, sqw, pref, nargout, hkle, METHOD='fix', ACCURACY=None, p=None, seed=None):
         r"""Numerically calculate the convolution of a user-defined single-mode
         cross-section function with the resolution function for a 3-axis
         neutron scattering experiment.

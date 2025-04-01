@@ -4,6 +4,7 @@ try: import tomllib
 except ModuleNotFoundError: import pip._vendor.tomli as tomllib
 from enum import Enum
 import pathlib
+from typing import Callable
 
 import numpy as np
 
@@ -116,10 +117,11 @@ class TAS_loader():
         taz_root = et.ElementTree(file=filename).getroot()
         taz_setting = taz_root.find('reso')
 
-        def taz(setting: str, casting_func):
+        def taz(setting: str, casting_func: Callable, default_value=None):
             setting_element = taz_setting.find(setting)
             if setting_element is None:
-                raise KeyError(f'{setting!r} not found in TAZ configuration file.')
+                Warning(f'{setting!r} not found in TAZ configuration file.')
+                return default_value
             
             return casting_func(setting_element.text)
 
@@ -131,6 +133,7 @@ class TAS_loader():
         tas_config['fixed_wavevector'] = taz('kf', float)
         tas_config['name'] = 'from_taz'     # TODO replace with filename
         tas_config['a3_offset'] = 90        # seems like takin convention 
+        tas_config['kf_vert'] = False       
 
         ###### Rest of the fields
         # senses are 01 no -1 1
