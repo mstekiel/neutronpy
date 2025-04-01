@@ -194,7 +194,7 @@ instr.sample.beta = 90
 instr.sample.gamma = 90
 instr.hcol = [40, 40, 40, 40]
 instr.vcol = [120, 120, 120, 120]
-instr.efixed = 14.7
+instr.fixed_wavevector = 2.662
 instr.orient1 = np.array([1, 0, 0])
 instr.orient2 = np.array([0, 1, 0])
 
