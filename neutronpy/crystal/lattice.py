@@ -55,10 +55,12 @@ class Lattice(object):
         - a || x
         - b* || y
         - c to complete RHS
-    2. The phase factors are (i) exp(i k_xyz r_xyz) and (ii) exp(i Q_hkl r_uvw).
-    3. All matrices, so for both real and reciprocal space, are represented for column vectors.
-    4. `B` matrix contains the 2pi factor. Consequently A.T @ B = 2pi eye(3,3). Transposition due to pt 3.
-    5. Implemented methods should work with arrays assuming the last index representing the `h, k, l` coordinates.
+    2. Matrices holding coordinates of real and reciprocal lattice, `Amatrix` and `Bmatrix`,
+       are column-wise representation of the lattice vectors.
+    3. The phase factors are (i) exp(i k_xyz r_xyz) and (ii) exp(i Q_hkl r_uvw).
+    4. All matrices, so for both real and reciprocal space, are represented for column vectors.
+    5. `B` matrix contains the 2pi factor. Consequently A.T @ B = 2pi eye(3,3). Transposition due to pt 3.
+    6. Implemented methods should work with arrays assuming the last index representing the `h, k, l` coordinates.
 
         
     Transformation notes
@@ -74,10 +76,18 @@ class Lattice(object):
         Transforms a reciprocal lattice point into an orthonormal coordinates system.
         (h,k,l) -> [kx,ky,kz] (1/Angstroem)
 
+
+    Developer notes
+    ---------------
+    - Main funcitonality is determining properties of various 3D vectors. The conceptual problem
+      for me is always which vector we are talking about. We have real/reciprocal space, and in each
+      of those the vector can be represented in Cartesian or lattice coordinates. After using the library
+      I believe the longer solution, with naming representing the space/base choice is best.
+      Thus the vectors have names derived from: Qkhl, Qxyz, Ruvw, Rxyz.
     """
 
     def __init__(self, a: float, b: float, c: float, alpha: float, beta: float, gamma: float):
-        self.lattice_parameters = [a,b,c, alpha,beta,gamma]
+        self._lattice_parameters = [a,b,c, alpha,beta,gamma]
         self._update_lattice()
 
     #################################################################################################
@@ -85,7 +95,7 @@ class Lattice(object):
 
     def _update_lattice(self):
         '''Master function recalculating all matrices involving the lattice parameters.'''
-        a,b,c, alpha,beta,gamma = self.lattice_parameters
+        a,b,c, alpha,beta,gamma = self._lattice_parameters
         # A matrix follows convention 1.
         self._Amatrix = self._constructA(a,b,c, alpha,beta,gamma)
 
@@ -170,82 +180,89 @@ class Lattice(object):
         return self._Gstar
 
     #################################################################################################
-    # Properties with setters
+    # Properties
+    @property
+    def lattice_parameters(self) -> list[float]:
+        '''Lattice parameters `[a,b,c, alpha,beta,gamma]`, in Angstroms and degrees.'''
+        return self._lattice_parameters
+
     @property
     def a(self) -> float:
         """First lattice parameter `a` in Angstrom."""
-        return self.lattice_parameters[0]
+        return self._lattice_parameters[0]
 
     @a.setter
     def a(self, new_a: float):
-        self.lattice_parameters[0] = new_a
+        self._lattice_parameters[0] = new_a
         self._update_lattice()
 
     @property
     def b(self) -> float:
         """Second lattice parameter `b` in Angstrom."""
-        return self.lattice_parameters[1]
+        return self._lattice_parameters[1]
 
     @b.setter
     def b(self, new_b: float):
-        self.lattice_parameters[1] = new_b
+        self._lattice_parameters[1] = new_b
         self._update_lattice()
 
     @property
     def c(self) -> float:
         """Third lattice parameter `c` in Angstrom."""
-        return self.lattice_parameters[2]
+        return self._lattice_parameters[2]
     
     @c.setter
     def c(self, new_c: float):
-        self.lattice_parameters[2] = new_c
+        self._lattice_parameters[2] = new_c
         self._update_lattice()
 
 
     @property
     def alpha(self) -> float:
         """First lattice angle `alpha` in degrees."""
-        return self.lattice_parameters[3]
+        return self._lattice_parameters[3]
 
     @alpha.setter
     def alpha(self, new_alpha):
-        self.lattice_parameters[3] = new_alpha
+        self._lattice_parameters[3] = new_alpha
         self._update_lattice()
 
     @property
     def beta(self) -> float:
         """Second lattice angle `beta` in degrees."""
-        return self.lattice_parameters[4]
+        return self._lattice_parameters[4]
 
     @beta.setter
     def beta(self, new_beta: float):
-        self.lattice_parameters[4] = new_beta
+        self._lattice_parameters[4] = new_beta
         self._update_lattice()
 
     @property
     def gamma(self) -> float:
         """Third lattice angle `gamma` in degrees."""
-        return self.lattice_parameters[5]
+        return self._lattice_parameters[5]
 
     @gamma.setter
     def gamma(self, new_gamma: float):
-        self.lattice_parameters[5] = new_gamma
+        self._lattice_parameters[5] = new_gamma
         self._update_lattice()
+
+    # Properties without setters
 
     @property
     def abc(self):
         """Lattice parameters in Angstroem"""
-        return self.lattice_parameters[:3]
+        return self._lattice_parameters[:3]
     
     @property
     def abg(self):
         """Lattice angles in degrees."""
-        return self.lattice_parameters[3:]
+        return self._lattice_parameters[3:]
     
     @property
     def abg_rad(self):
         """Lattice angles in radians."""
-        return np.radians(self.lattice_parameters[3:])
+        return np.radians(self._lattice_parameters[3:])
 
     @property
     def lattice_type(self):
@@ -282,14 +299,15 @@ class Lattice(object):
 
     #################################################################################################
     # Functionalities
-    def get_scalar_product(self, hkl1: np.ndarray, hkl2: np.ndarray):
-        """Returns the scalar product between two lists of vectors.
+    def get_Q1Q2(self, Qhkl1: np.ndarray, Qhkl2: np.ndarray):
+        """Returns the scalar product between two lists of reciprocal vectors
+        that are represented in reciprocal lattice coordinates.
         
         Parameters
         ----------
-        hkl1 : array_like (3) or (...,3)
+        Qhkl1 : array_like (3) or (...,3)
             Vector or array of vectors in reciprocal space.
-        hkl2 : array_like (...,3)
+        Qhkl2 : array_like (...,3)
             List of vectors in reciprocal space.
 
         Returns
@@ -304,32 +322,79 @@ class Lattice(object):
         Where the last one is in the orthonormal coordinate frame and can be 
         directly computed.
         """
-        v1v2_cosine = np.einsum('...i,ij,...j->...', hkl1, self.Gstar, hkl2)
+        Q1Q2_cosine = np.einsum('...i,ij,...j->...', Qhkl1, self.Gstar, Qhkl2)
 
-        return v1v2_cosine
+        return Q1Q2_cosine
     
-    def get_Q(self, hkl: np.ndarray) -> np.ndarray:
-        '''Returns the magnitude |Q| [1/A] of reciprocal lattice vectors `hkl`.
-                
+    def get_R1R2(self, Ruvw1: np.ndarray, Ruvw2: np.ndarray):
+        """Returns the scalar product between two lists of reciprocal vectors
+        that are represented in reciprocal lattice coordinates.
+        
         Parameters
         ----------
-        hkl : array_like (3,...)
-            Reciprocal lattice vector in r.l.u. Signature: `h,k,l = hkl`
+        Ruvw1 : array_like (3) or (...,3)
+            Vector or array of vectors in reciprocal space.
+        Ruvw2 : array_like (...,3)
+            List of vectors in reciprocal space.
 
         Returns
         -------
-        Q : array_like (,...)
+        ret : array_like (...)
+            List of calculated scalar products between vectors.
+
+        Notes
+        -----
+        Similar to `get_Q1Q2()`, takes advantage of `Gmatrix`.
+        """
+        R1R2_cosine = np.einsum('...i,ij,...j->...', Ruvw1, self.G, Ruvw2)
+
+        return R1R2_cosine
+    
+    def get_Q(self, Qhkl: np.ndarray) -> np.ndarray:
+        '''Returns the magnitude |Q| [1/A] of reciprocal lattice vectors represented in lattice coordinates.
+                
+        Parameters
+        ----------
+        Qhkl : array_like (...,3)
+            Reciprocal lattice vector in r.l.u. Signature: `h,k,l = hkl.T`
+
+        Returns
+        -------
+        Q : array_like (...,)
             The magnitude of the reciprocal lattice vectors in [1/A].
-            Shape follows the input signature with reduced first dimension.
+            Shape follows the input signature with reduced last dimension.
 
 
         Notes
         -----
-        Calculates the Q vector from the inverse metric tensor: `Q = sqrt(hkl.T @ Gstar @ hkl)`.
-        Alternative method of calculating from B matrix proved to be slower: `Q = norm(B @ hkl)`
+        Calculates the Q vector from the inverse metric tensor: `Q = sqrt(Qhkl.T @ Gstar @ Qhkl)`.
+        Alternative method of calculating from B matrix proved to be slower: `Q = norm(B @ Qhkl)`
         '''
         # return np.sqrt(np.einsum('i...,ij,j...->...', hkl, self.Gstar, hkl))
-        return np.sqrt(self.get_scalar_product(hkl, hkl))
+        return np.sqrt(self.get_Q1Q2(Qhkl, Qhkl))
+    
+    def get_R(self, Ruvw: np.ndarray) -> np.ndarray:
+        '''Returns the magnitude |R| [A] of real lattice vectors represented in lattice coordinates.
+                
+        Parameters
+        ----------
+        Ruvw : array_like (...,3)
+            Real lattice vector in r.l.u. Signature: `u,v,w = uvw.T`
+
+        Returns
+        -------
+        R : array_like (...,)
+            The magnitude of the real lattice vectors in [A].
+            Shape follows the input signature with reduced last dimension.
+
+
+        Notes
+        -----
+        Calculates the R vector from the inverse metric tensor: `R = sqrt(Ruvw.T @ G @ Ruvw)`.
+        Alternative method of calculating from A matrix proved to be slower: `R = norm(A @ Ruvw)`
+        '''
+        # return np.sqrt(np.einsum('i...,ij,j...->...', hkl, self.Gstar, hkl))
+        return np.sqrt(self.get_R1R2(Ruvw, Ruvw))
     
     def get_dspacing(self,hkl: np.ndarray) -> np.ndarray:
         u"""Returns the d-spacing of a given reciprocal lattice vector.
