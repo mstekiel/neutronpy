@@ -1,5 +1,7 @@
 import numpy as np
 
+from ..crystal import Sample
+
 from .exceptions import InstrumentError
 from .tools import (_CleanArgs, _scalar, calculate_projection_hwhm, ellipse,
                     project_into_plane)
@@ -17,6 +19,53 @@ class GeneralInstrument(object):
 
     """
 
+    #################################################################################
+    # Properties
+
+    @property
+    def sample(self) -> Sample:
+        """Sample measured at the spectrometer."""
+        return self._sample
+
+    @sample.setter
+    def sample(self, new_sample):
+        """Allowed to set with `Sample` instance or
+        cofig dictionary which is passed to `Sample.__init__`.
+        """
+        if isinstance(new_sample, Sample):
+            self._sample = new_sample
+        elif isinstance(new_sample, dict):
+            self._sample = Sample(**new_sample)
+        else:
+            raise ValueError(f'New sample must ba a valid instance of {Sample.__name__!r}, or dictionary.')
+        
+
+    @property
+    def orient1(self):
+        """Miller indexes of the first reciprocal-space orienting vector for
+        the S coordinate system, as explained in Section II G.
+        """
+        return self._sample.orient1
+
+    @orient1.setter
+    def orient1(self, value):
+        self._sample.orient1 = np.array(value)
+        
+
+    @property
+    def orient2(self):
+        """Miller indexes of the second reciprocal-space orienting vector
+        for the S coordinate system, as explained in Section II G.
+        """
+        return self._sample.orient2
+
+    @orient2.setter
+    def orient2(self, value):
+        self._sample.orient2 = np.array(value)
+
+
+    #################################################################################
+    # Methods
     def calc_projections(self, hkle, npts=36):
         r"""Calculates the resolution ellipses for projections and slices from
         the resolution matrix.
