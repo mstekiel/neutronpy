@@ -13,6 +13,7 @@ from .guide import Guide
 from .plot import PlotInstrument
 from .tas_instrument import TripleAxisInstrument
 from .tof_instrument import TimeOfFlightInstrument
+from .tas_multiplexing_instrument import CAMEA_MTAS
 from .tools import GetTau, get_angle_ki_Q, get_bragg_widths, get_kfree, chop
 from . import tools
 from . import exceptions
