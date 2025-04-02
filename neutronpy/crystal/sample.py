@@ -4,8 +4,6 @@ r"""Sample class for e.g. Instrument class
 """
 import numpy as np
 
-from neutronpy.instrument.exceptions import InstrumentError
-
 from .lattice import Lattice
 
 
@@ -252,7 +250,6 @@ class Sample(Lattice):
 
     @orient1.setter
     def orient1(self, vec):
-        np.ravel
         self._orient1 = np.array(vec).ravel()
         self._update_orientation()
 
@@ -287,6 +284,15 @@ class Sample(Lattice):
         """
         # Maybe better to pull this as separate field not to recalculate each time?
         return self.Umatrix @ self.Bmatrix
+    
+    @property
+    def UAmatrix(self):
+        r"""Transforms a real lattice point into lab coordinate system.
+        
+        `UA: (u,v,w) -> [x,y,z]_{lab} (Angstroem)`
+        """
+        # Maybe better to pull this as separate field not to recalculate each time?
+        return self.Umatrix @ self.Amatrix
 
     ########################################################################
     # Functionalities
@@ -331,7 +337,7 @@ class Sample(Lattice):
 
         # Ensure `hkl` is in the scattering plane, by own call to avoid repetition
         if np.sum( Q_xyz[...,2] > 1e-10 ):
-            raise InstrumentError('Requested `hkl` not in the scattering plane.')
+            raise ValueError('Requested `hkl` not in the scattering plane.')
 
         # Since `o1 || x` we just need the polar angle of requested `hkl`
         return -np.arctan2(Q_xyz[...,1], Q_xyz[...,0])
