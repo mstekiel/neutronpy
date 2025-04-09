@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-import warnings
-
-from tomlkit import float_
 
 from ..constants import load_dspacings
 

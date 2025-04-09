@@ -3,7 +3,7 @@ name = "neutronpy"
 version = "2.0.0"
 description = "NeutronPy is a collection of commonly used tools aimed at facilitating the analysis of neutron scattering data. NeutronPy is built primarily using the numpy and scipy python libraries, with a translation of ResLib 3.4c (MatLab) routines for Instrument resolution calculations."
 authors = ["David M Fobes <dfobes@lanl.gov>"]
-readme = 'README.rst'
+readme = 'README.md'
 license = "MIT"
 packages = [
     { include = 'neutronpy' },
@@ -25,10 +25,9 @@ include = [
 # Main dependencies
 [tool.poetry.dependencies]
 python = "^3.6"
-numpy = "^1.10"
+numpy = ">=1.10"
 scipy = "^1.0"
 matplotlib = "^3.0"
-lmfit = "^0.9.5"
 h5py = "^3.1.0"
 
 
@@ -37,6 +36,7 @@ h5py = "^3.1.0"
 optional = true
 
 [tool.poetry.group.dev.dependencies]
+lmfit = "^0.9.5"
 pytest = "^6.1.2"
 mock = "^4.0.2"
 codecov = "^2.1.10"

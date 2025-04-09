@@ -12,7 +12,7 @@ from ..crystal import Sample
 from ..neutron import Neutron
 # from ..instrument import Instrument
 # from ..instrument.tas_instrument import TripleAxisInstrument
-from ..instrument.tof_instrument import TimeOfFlightInstrument
+# from ..instrument.tof_instrument import TimeOfFlightInstrument
 
 taz_keys = {'algo': 'method',
             'ana_d': 'ana.d',

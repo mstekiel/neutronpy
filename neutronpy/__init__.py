@@ -11,15 +11,15 @@ from . import fileio
 from . import functions
 from . import instrument
 from . import models
-from . import spurion
-from . import scattering
+# from . import spurion
+# from . import scattering
 from .crystal import Lattice
-from .crystal import Material
+# from .crystal import Material
 from .crystal import Sample
-from .crystal import symmetry
-from .data import Data
+# from .crystal import symmetry
+# from .data import Data
 from .neutron import Neutron
-from .lsfit import Fitter
+# from .lsfit import Fitter
 # from .instrument import Instrument
 from .instrument import TripleAxisInstrument, TimeOfFlightInstrument
 
