@@ -7,3 +7,9 @@ I have included resolution calcualtion options from Tobi Weber, and heavily rewo
 I hate the installation method. The dependencies have incompatible versions, especially because of numpy and matplotlib.
 
 Also the package is bit inflated for future developments. I have removed everything I don't use at the moment.
+
+# TODO
+
+ - [ ] Cleanups
+ - [ ] check versions and packages. lmfit (and matplotlib?) has problem with new numpy
+   - [ ] add brille
