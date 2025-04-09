@@ -438,16 +438,16 @@ class Lattice(object):
         return 2*np.arcsin( wavelength*self.get_Q(hkl)/4/np.pi )
     
     
-    def get_angle_between_planes(self, v1, v2) -> float:
+    def get_angle_between_Qs(self, Q1, Q2) -> float:
         r"""Returns the angle :math:`\phi` [rad] between two reciprocal lattice
         vectors (or planes as defined by the vectors normal to the plane).
 
         Parameters
         ----------
-        v1 : array_like (3)
+        Q1 : array_like (3)
             First reciprocal lattice vector in units r.l.u. 
 
-        v2 : array_like (3,...)
+        Q2 : array_like (3,...)
             Second reciprocal lattice vector in units r.l.u.
 
         Returns
@@ -461,8 +461,8 @@ class Lattice(object):
         `v1.Gstar.v2` is the cosine between v1-v2.
         Due to rounding errors the cosine(v1,v2) is clipped to [-1,1].
         """
-        v1v2_cosine = np.einsum('i,ij,...j->...', v1, self.Gstar, v2)
-        v1 = self.get_Q(v1)
-        v2 = self.get_Q(v2)
+        Q1Q2_cosine = np.einsum('i,ij,...j->...', Q1, self.Gstar, Q2)
+        Q1 = self.get_Q(Q1)
+        Q2 = self.get_Q(Q2)
 
-        return np.arccos( np.clip(v1v2_cosine / (v1*v2), -1, 1) )
+        return np.arccos( np.clip(Q1Q2_cosine / (Q1*Q2), -1, 1) )
