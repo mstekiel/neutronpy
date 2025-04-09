@@ -41,6 +41,7 @@ poetry.lock
 main.py
 plot_test.pdf
 test.out*
+test.py
 .coverage*
 .cache/*
 .pytest_cache/

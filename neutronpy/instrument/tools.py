@@ -8,7 +8,7 @@ import numpy as np
 from ..constants import neutron_mass, hbar
 from ..crystal import Sample
 from ..neutron import Neutron
-from .exceptions import AnalyzerError, MonochromatorError, ScatteringTriangleError
+from .exceptions import AnalyzerError, MonochromatorError, ScatteringTriangleNotClosed
 
 
 class ComponentTemplate(object):
@@ -519,7 +519,7 @@ def get_angle_ki_Q(ki, kf, Q, gonio_dir=-1, outside_scat_tri=False):
     else:
         c = (ki ** 2 - kf ** 2 + Q ** 2) / (2.0 * ki * Q)
         if abs(c) > 1.0:
-            raise ScatteringTriangleError
+            raise ScatteringTriangleNotClosed
 
         angle = np.arccos(c)
 
@@ -557,7 +557,7 @@ def get_kfree(W, kfixed, ki_fixed=True):
     k_sq = kE_sq + kfixed ** 2
 
     if k_sq < 0.0:
-        raise ScatteringTriangleError
+        raise ScatteringTriangleNotClosed
     else:
         return np.sqrt(k_sq)
 

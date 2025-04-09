@@ -8,15 +8,19 @@ import numpy as np
 from timeit import default_timer as timer
 
 
-n = Neutron(energy=14.87)
-print(n._prefactor_energy_from_wavevector)
-print(n._prefactor_energy_from_wavelength)
-print(n._prefactor_energy_from_velocity)
-print(n._prefactor_energy_from_frequency)
-print(n._prefactor_energy_from_temperature)
+tas = TripleAxisInstrument.make_default()
 
-print(n)
+hkle = np.array([
+    [1,1,0,5],
+    [1,1,0,550],
+    [1,11,0,5],
+    [1,0,1,5],
+])
 
+
+print(tas.get_angles(hkle))
+print()
+print(tas.calc_resolution_HKLE(hkle, base='Q'))
 
 # # See energy overlapping
 # Ef = np.array([3.200, 3.382, 3.574, 3.787, 4.035, 4.312, 4.631, 4.987])

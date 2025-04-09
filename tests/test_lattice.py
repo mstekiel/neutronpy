@@ -37,22 +37,22 @@ def test_constructor():
 def test_get_angle_between_planes():
     """Tests get angle between planes defined by two vectors
     """
-    assert np.allclose(uc_cubic.get_angle_between_planes([1,0,0], [1,1,1]), np.radians(54.73561031724535))
-    assert np.allclose(uc_cubic.get_angle_between_planes([1,0,0], [0,1,0]), np.pi/2)
-    assert np.allclose(uc_cubic.get_angle_between_planes([1,0,0], [1,1,0]), np.pi/4)
-    assert np.allclose(uc_cubic.get_angle_between_planes([1,0,0], [1,0,0]), 0)
+    assert np.allclose(uc_cubic.get_angle_between_Qs([1,0,0], [1,1,1]), np.radians(54.73561031724535))
+    assert np.allclose(uc_cubic.get_angle_between_Qs([1,0,0], [0,1,0]), np.pi/2)
+    assert np.allclose(uc_cubic.get_angle_between_Qs([1,0,0], [1,1,0]), np.pi/4)
+    assert np.allclose(uc_cubic.get_angle_between_Qs([1,0,0], [1,0,0]), 0)
 
-    assert np.allclose(uc_hex.get_angle_between_planes([1,0,0], [0,1,0]), np.pi/3)
-    assert np.allclose(uc_hex.get_angle_between_planes([1,0,0], [0,0,1]), np.pi/2)
+    assert np.allclose(uc_hex.get_angle_between_Qs([1,0,0], [0,1,0]), np.pi/3)
+    assert np.allclose(uc_hex.get_angle_between_Qs([1,0,0], [0,0,1]), np.pi/2)
 
     uc = Lattice(4,4,5, 90,90,120)
     hkl_totest =  [[0,0,1], [0,1,0], [1,0,0], [1,1,0]]
-    assert np.allclose(uc.get_angle_between_planes([1,0,0], hkl_totest), 
+    assert np.allclose(uc.get_angle_between_Qs([1,0,0], hkl_totest), 
                        [np.pi/2, np.pi/3, 0, np.pi/6])
 
     uc.gamma = 90
     hkl_totest =  [[0,0,1], [0,1,0], [1,0,0], [1,1,0]]
-    assert np.allclose(uc.get_angle_between_planes([1,0,0], hkl_totest), 
+    assert np.allclose(uc.get_angle_between_Qs([1,0,0], hkl_totest), 
                        [np.pi/2, np.pi/2, 0, np.pi/4])
 
 def test_get_dspacing():
@@ -107,7 +107,7 @@ def test_setters():
     assert np.allclose( uc.get_dspacing([0,0,1]), 7 )
 
     hkl_totest =  [[0,0,1], [0,1,0], [1,1,0]]
-    assert np.allclose(uc.get_angle_between_planes([1,0,0], hkl_totest), 
+    assert np.allclose(uc.get_angle_between_Qs([1,0,0], hkl_totest), 
                        [np.pi/2, np.pi/2, np.pi/4])
 
     # Hexagonal
@@ -122,7 +122,7 @@ def test_setters():
     assert np.allclose( uc.get_dspacing([0,0,1]), 7 )
 
     hkl_totest =  [[0,0,1], [0,1,0], [1,1,0]]
-    assert np.allclose(uc.get_angle_between_planes([1,0,0], hkl_totest), 
+    assert np.allclose(uc.get_angle_between_Qs([1,0,0], hkl_totest), 
                        [np.pi/2, np.pi/3, np.pi/6])
 
 

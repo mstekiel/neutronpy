@@ -10,7 +10,7 @@ from .tas_instrument import TripleAxisInstrument
 
 from ..crystal import Sample
 from ..neutron import Neutron
-from .exceptions import ScatteringTriangleError, InstrumentError
+from .exceptions import ScatteringTriangleNotClosed, InstrumentError
 from .general import GeneralInstrument
 from .analyzer import Analyzer
 from .monochromator import Monochromator

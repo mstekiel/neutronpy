@@ -8,7 +8,7 @@ from .lattice import Lattice
 
 
 class Sample(Lattice):
-    """Private class containing sample information.
+    """Class containing sample information. `Sample` is an oriented `Lattice`.
 
     Parameters
     ----------
@@ -215,7 +215,7 @@ class Sample(Lattice):
         o123 = np.transpose( [o1_xyz, o2_xyz, o3_xyz] )
 
         # (2) and (3) construct Bp and take care of potential non-orthogonality
-        phi = self.get_angle_between_planes(o1_hkl, o2_hkl)
+        phi = self.get_angle_between_Qs(o1_hkl, o2_hkl)
         # TODO below will it work for monoclinic and triclinic cases?
         Bp = np.array([
             [self.get_Q(o1_hkl), self.get_Q(o2_hkl)*np.cos(phi), 0],
@@ -356,4 +356,4 @@ class Sample(Lattice):
         phi : (...)
             The out-of-plane angles.
         """
-        return self.get_angle_between_planes(hkl, np.cross(self.orient1, self.orient2))
+        return self.get_angle_between_Qs(hkl, np.cross(self.orient1, self.orient2))
