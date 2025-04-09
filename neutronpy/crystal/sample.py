@@ -310,7 +310,7 @@ class Sample(Lattice):
         List indicating whether given vectors lie in the scattering plane.
         '''
         Q_xyz = np.einsum('ij,...j->...i', self.UBmatrix, hkl)
-        return Q_xyz[...,2] < 1e-10
+        return np.abs(Q_xyz[...,2]) < 1e-10
 
     def get_angle_to_o1(self, hkl: np.ndarray) -> float:
         '''Calculate the angle required to rotate the scattering vector `hkl`
