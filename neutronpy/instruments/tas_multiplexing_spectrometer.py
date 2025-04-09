@@ -4,16 +4,14 @@ r"""Various multiplexing TAS
 from collections import namedtuple
 from typing import Any, Callable
 import numpy as np
-from scipy.spatial.transform.rotation import Rotation as sp_Rotation
 
-from .tas_instrument import TripleAxisInstrument
+from .tas_spectrometer import TripleAxisSpectrometer
 
 from ..crystal import Sample
 from ..neutron import Neutron
 from .exceptions import ScatteringTriangleNotClosed, InstrumentError
-from .general import GeneralInstrument
-from .analyzer import Analyzer
-from .monochromator import Monochromator
+from .neutron_spectrometer import NeutronSpectrometer
+from .components import Analyzer, Monochromator
 from .plot import PlotInstrument
 
 from ..loggers import setup_TAS_logger
@@ -41,7 +39,7 @@ ScatteringSenses = namedtuple('ScatteringSenses', 'mono, sample, ana')
 #       The range is chosen as mid points between analyzer fixed Ef. 
 #       NO: The energy range is taken on the example of ana4
 #       from [lass23] as E0+-dE, E0=4.035 +dE=0.142 -dE=0.134. dE/E=0.14/4.035=3.5%
-class CAMEA_MTAS(GeneralInstrument, PlotInstrument):
+class CAMEA_MTAS(NeutronSpectrometer, PlotInstrument):
     u"""An object that represents the CAMEA@PSI spectrometer with
     multiplexing detector bank. It contains experimental configuration, 
     including a sample and main components if the instrument.
@@ -179,7 +177,7 @@ class CAMEA_MTAS(GeneralInstrument, PlotInstrument):
             # arms, ana dimensions
             primary_arms = [200, 160, 130]
             ana_row_arms = primary_arms + [sample_ana_distances[n], ana_det_distances[n]]
-            ana_row = TripleAxisInstrument(fixed_kf=False, fixed_wavevector=self.incoming_neutron.wavevector,
+            ana_row = TripleAxisSpectrometer(fixed_kf=False, fixed_wavevector=self.incoming_neutron.wavevector,
                                                 name=name+f'_row{n}', scat_senses=scat_senses,
                                                 a3_offset=a3_offset, kf_vert=True,
                                                 arms=ana_row_arms, hcol=hcol,
@@ -205,16 +203,16 @@ class CAMEA_MTAS(GeneralInstrument, PlotInstrument):
     # Implemented as needed 
 
     @property
-    def analyzer_rows(self) -> list[TripleAxisInstrument]:
+    def analyzer_rows(self) -> list[TripleAxisSpectrometer]:
         '''List of `TripleAxisInstrument` which is treated as each analyzer row
         of the `MultiplexingTripleAxisInstrument'''
         return self._analyzer_rows
     
     @analyzer_rows.setter
-    def analyzer_rows(self, new_analyzers: list[TripleAxisInstrument]):
+    def analyzer_rows(self, new_analyzers: list[TripleAxisSpectrometer]):
         if not isinstance(new_analyzers, list):
             raise ValueError("New analyzers of `MTAS` must be a list of `TAS`")
-        if not isinstance(new_analyzers[0], TripleAxisInstrument):
+        if not isinstance(new_analyzers[0], TripleAxisSpectrometer):
             raise ValueError("New analyzers of `MTAS` must be a list of `TAS`")
         
         self._analyzer_rows = new_analyzers
@@ -292,7 +290,7 @@ class CAMEA_MTAS(GeneralInstrument, PlotInstrument):
         Emin, Emax = self.functional_Etransfer
         ind_invalidE = (hkle[...,3]<Emin) | (hkle[...,3]>Emax)
         if np.sum(ind_invalidE):
-            raise ScatteringTriangleError(f"Functional Erange is {self.functional_Etransfer}. Can't reach requested energy:\n{hkle[ind_invalidE, ...]}")
+            raise ScatteringTriangleNotClosed(f"Functional Erange is {self.functional_Etransfer}. Can't reach requested energy:\n{hkle[ind_invalidE, ...]}")
 
         # Associate each energy from `hkle` into specific analyzer row with the digitize()
         Ef = self.incoming_neutron.energy - hkle[...,3]

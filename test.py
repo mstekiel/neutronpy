@@ -1,14 +1,14 @@
 from enum import Enum
 from logging import config
-from neutronpy.instrument import Analyzer, Monochromator, CAMEA_MTAS
+from neutronpy.instruments import CAMEA_MTAS
 from neutronpy.crystal import Sample, Lattice
-from neutronpy import Neutron, TripleAxisInstrument
+from neutronpy import Neutron, TripleAxisSpectrometer
 # from neutronpy.fileio import TAS_loader
 import numpy as np
 from timeit import default_timer as timer
 
 
-tas = TripleAxisInstrument.make_default()
+tas = TripleAxisSpectrometer.make_default()
 
 hkle = np.array([
     [1,1,0,5],

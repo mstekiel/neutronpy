@@ -7,7 +7,7 @@ from copy import deepcopy
 import numpy as np
 import pytest
 
-from neutronpy import TripleAxisInstrument
+from neutronpy import TripleAxisSpectrometer
 
 """
 TODO
@@ -36,7 +36,7 @@ def test_EIGER_t270():
     ])
 
     taz_filename = r"C:\ProgramData\takin_270\instruments\EIGER_t270.taz"
-    TAS = TripleAxisInstrument.from_taz_file(taz_filename)
+    TAS = TripleAxisSpectrometer.from_taz_file(taz_filename)
     TAS.fixed_wavevector = KF
 
 
@@ -65,7 +65,7 @@ def test_in20():
     ])
 
     taz_filename = r"C:\ProgramData\takin_270\instruments\in20.taz"
-    TAS = TripleAxisInstrument.from_taz_file(taz_filename)
+    TAS = TripleAxisSpectrometer.from_taz_file(taz_filename)
     TAS.fixed_wavevector = KF
 
     # Test Q coordinate system
@@ -95,7 +95,7 @@ def test_tax():
     ])
 
     taz_filename = r"C:\ProgramData\takin_270\instruments\tax.taz"
-    TAS = TripleAxisInstrument.from_taz_file(taz_filename)
+    TAS = TripleAxisSpectrometer.from_taz_file(taz_filename)
     TAS.fixed_wavevector = KF
 
     # Test Q coordinate system

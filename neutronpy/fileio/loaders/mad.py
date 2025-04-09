@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ...data import Data
-from ...instrument import TripleAxisInstrument
+from ...instruments import TripleAxisSpectrometer
 
 
 class Mad(Data):
@@ -52,5 +52,5 @@ class Mad(Data):
             self.Q_keys = {'h': 'QH', 'k': 'QK', 'l': 'QL', 'e': 'EN', 'temp': 'TT'}
 
         if load_instrument:
-            instrument = TripleAxisInstrument()
+            instrument = TripleAxisSpectrometer()
             self.instrument = instrument

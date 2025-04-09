@@ -3,11 +3,10 @@ import numpy as np
 from ..crystal import Sample
 
 from .exceptions import InstrumentError
-from .tools import (_CleanArgs, _scalar, calculate_projection_hwhm, ellipse,
-                    project_into_plane)
+from .tools import (calculate_projection_hwhm, ellipse, project_into_plane)
 
 
-class GeneralInstrument(object):
+class NeutronSpectrometer(object):
     r"""Class containing methods general to both Triple Axis and Time of Flight
     instruments.
 

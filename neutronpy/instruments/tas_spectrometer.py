@@ -12,11 +12,9 @@ from neutronpy.fileio.instrument import TAS_loader
 from ..crystal import Sample
 from ..neutron import Neutron
 from .exceptions import warn, ScatteringTriangleNotClosed, VectorNotInScatteringPlane, MonochromatorError, AnalyzerError
-from .general import GeneralInstrument
-from .analyzer import Analyzer
-from .monochromator import Monochromator
+from .neutron_spectrometer import NeutronSpectrometer
+from .components import Analyzer, Monochromator, ComponentTemplate
 from .plot import PlotInstrument
-from .tools import _CleanArgs, ComponentTemplate, _modvec, _scalar, _star, _voigt
 
 from .TW_respy.pop import calc as TW_calc_pop
 from .TW_respy.eck import calc as TW_calc_eck
@@ -48,16 +46,16 @@ ScatteringSenses = namedtuple('ScatteringSenses', 'mono, sample, ana')
 #   [ ] Change the policy of resolutions calculations. Instead of throwing errors when 
 #       the `hkl` is not in the scattering plane, return NaNs.
 
-class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
+class TripleAxisSpectrometer(NeutronSpectrometer, PlotInstrument):
     u"""An object that represents a Triple Axis Spectrometer (TAS) instrument
     experimental configuration, including a sample.
 
     Parameters
     ----------
-    beam : `Neutron`, optional
+    fixed_neutron : `Neutron`, optional
         Properties of the fixed beam. `Neutron` instance.
 
-    fx: int, optional
+    fixed_kf: int, optional
         Flag encoding thether the instrument works in constant-ki `fx=1`,
         or constant-kf `fx=1` mode.
 
@@ -467,6 +465,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         Notes
         -----
         Calls Tobi Weber's python implementation of the algorithm.        
+        [T. Weber mail 26.08.2024] Resolution ellipsoid is represented in terms of variances in Takin and res_py.
         """
 
         self.logger.debug('Calculating resolution in Q coordinates')
@@ -887,7 +886,7 @@ class TripleAxisInstrument(GeneralInstrument, PlotInstrument):
         #       On the other hand, Popovici writes `M is the resolution matrix, the inverse 
         #       of which is the covariance matrix. the covariance matrix is defined by
         #       variances and cross corellations, thus fundamentally different from FWHM.
-        #       I need to some with the unifying solution, or believe the solution is unified by Tobi already.
+        #       I need to find some with the unifying solution, or believe the solution is unified by Tobi already.
         #       [T. Weber mail 26.08.2024] Yes it in terms of variances in Takin and res_py
 
 

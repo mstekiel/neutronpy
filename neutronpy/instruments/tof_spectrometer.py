@@ -7,16 +7,14 @@ import numpy as np
 from ..constants import e, hbar, neutron_mass
 from ..crystal.sample import Sample
 from ..neutron import Neutron
-from .chopper import Chopper
-from .detector import Detector
+from .components import Chopper, Detector, Guide
 from .exceptions import DetectorError
-from .general import GeneralInstrument
-from .guide import Guide
+from .neutron_spectrometer import NeutronSpectrometer
 from .plot import PlotInstrument
 from .tools import _CleanArgs, chop, get_angle_ki_Q, get_kfree
 
 # MS: TODO
-class TimeOfFlightInstrument(GeneralInstrument, PlotInstrument):
+class TimeOfFlightSpectrometer(NeutronSpectrometer, PlotInstrument):
     r"""An object representing a Time of Flight (TOF) instrument experimental
     configuration, including a sample.
 

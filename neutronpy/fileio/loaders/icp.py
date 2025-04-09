@@ -4,7 +4,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ...data import Data
-from ...instrument import TripleAxisInstrument
+from ...instruments import TripleAxisSpectrometer
 
 
 class Icp(Data):
@@ -59,5 +59,5 @@ class Icp(Data):
             self.Q_keys = {'h': 'Q(x)', 'k': 'Q(y)', 'l': 'Q(z)', 'e': 'E', 'temp': 'T-act'}
 
         if load_instrument:
-            instrument = TripleAxisInstrument()
+            instrument = TripleAxisSpectrometer()
             self.instrument = instrument

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from ..constants import load_dspacings
+from ...constants import load_dspacings
 
 class Monochromator(object):
     u"""Class containing monochromator information.

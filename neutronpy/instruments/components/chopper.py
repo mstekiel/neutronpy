@@ -4,7 +4,7 @@ r"""Chopper class for Time of Flight instrument
 """
 import numpy as np
 
-from .exceptions import ChopperError
+from ..exceptions import ChopperError
 
 
 class Chopper(object):

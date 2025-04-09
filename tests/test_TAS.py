@@ -5,11 +5,11 @@ r"""Testing of the resolution library - TAS
 import numpy as np
 import pytest
 
-from neutronpy.instrument import TripleAxisInstrument
+from neutronpy.instruments import TripleAxisSpectrometer
 from neutronpy.crystal import Sample
 
 def test_angles():
-    tas = TripleAxisInstrument.make_default()
+    tas = TripleAxisSpectrometer.make_default()
     
     # Direct comparisons with Takin require following
     tas.sample.a = 4

@@ -15,8 +15,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QSizePolicy, QTextEdit,
                              QVBoxLayout)
 
 from .neutron import Neutron
-from .instrument import GetTau, TripleAxisInstrument
-from .instrument.plot import PlotInstrument
+from .instruments import GetTau, TripleAxisSpectrometer
+from .instruments.plot import PlotInstrument
 
 
 class MyMplCanvas(FigureCanvas):
@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
         self.load_signals()
 
     def load_instrument(self):
-        self.instrument = TripleAxisInstrument()
+        self.instrument = TripleAxisSpectrometer()
 
         self.instrument.sample.a, self.instrument.sample.b, self.instrument.sample.c = [float(i) for i in
                                                                                         self.abc_input.text().split(

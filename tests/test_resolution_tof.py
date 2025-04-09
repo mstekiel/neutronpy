@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 from matplotlib import use
 from mock import patch
-from neutronpy import instrument
-from neutronpy.instrument.exceptions import *
+from neutronpy import instruments
+from neutronpy.instruments.exceptions import *
 
 use("Agg")
 
@@ -14,7 +14,7 @@ use("Agg")
 def gen_std_instr():
     """Generates a known instrument
     """
-    instr = instrument.TimeOfFlightInstrument()
+    instr = instruments.TimeOfFlightSpectrometer()
 
     instr.l_pm = 1567
     instr.l_ms = 150
@@ -79,11 +79,11 @@ def test_calc_res_cases():
     """Test calculation of various cases
     """
 
-    instr = instrument.TimeOfFlightInstrument()
+    instr = instruments.TimeOfFlightSpectrometer()
     instr.detector.shape = "spherical"
     instr.calc_resolution([1, 0, 0, 0])
 
-    instr = instrument.TimeOfFlightInstrument()
+    instr = instruments.TimeOfFlightSpectrometer()
     instr.calc_resolution([1, 0, 0, 0])
 
 
@@ -91,7 +91,7 @@ def test_calc_res_multi_point():
     """Tests calculation of cases with multiple point in `hkle`
     """
 
-    instr = instrument.TimeOfFlightInstrument()
+    instr = instruments.TimeOfFlightSpectrometer()
     instr.calc_resolution([1, [0, 1, 1], 0, [0, 1, 2]])
 
     assert (instr.R0.size == 3)
@@ -107,7 +107,7 @@ def test_bragg_widths():
     instr = gen_std_instr()
 
     instr.calc_resolution([1, 1, 0, 0])
-    bragg = instrument.tools.get_bragg_widths(instr.RMS)
+    bragg = instruments.tools.get_bragg_widths(instr.RMS)
 
     assert np.all(np.round(bragg, 3) == np.array([0.037, 0.021, 0.053, 0.353, 0.180]))
 

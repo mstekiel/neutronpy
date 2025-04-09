@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Custom Errors for the instrument module.
 
 DEV:

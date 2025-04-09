@@ -3,7 +3,7 @@ from collections import OrderedDict
 import numpy as np
 
 from ...data import Data
-from ...instrument import TripleAxisInstrument
+from ...instruments import TripleAxisSpectrometer
 
 
 class Spice(Data):
@@ -61,7 +61,7 @@ class Spice(Data):
             self.Q_keys = {'h': 'h', 'k': 'k', 'l': 'l', 'e': 'e', 'temp': 'tvti'}
 
         if load_instrument:
-            instrument = TripleAxisInstrument()
+            instrument = TripleAxisSpectrometer()
             for item in file_header:
                 line = item.split('=')
                 if line[0].strip() == 'monochromator':

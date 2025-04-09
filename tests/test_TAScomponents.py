@@ -7,8 +7,8 @@ import pytest
 import numpy as np
 
 from neutronpy import Neutron
-from neutronpy.instrument import Monochromator, Analyzer
-from neutronpy.instrument.exceptions import *
+from neutronpy.instruments import Monochromator, Analyzer
+from neutronpy.instruments.exceptions import *
 
 rad2deg = 180/np.pi
 

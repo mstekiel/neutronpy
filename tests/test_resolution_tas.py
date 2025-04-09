@@ -8,8 +8,8 @@ import numpy as np
 import pytest
 from matplotlib import use
 from mock import patch
-from neutronpy import Sample, instrument
-from neutronpy.instrument.exceptions import *
+from neutronpy import Sample, instruments
+from neutronpy.instruments.exceptions import *
 
 use('Agg')
 
@@ -17,15 +17,15 @@ def test_resolution_matrices_MS()
     sample = Sample(4,4,4, 90,90,90, orient1=[1,0,0], orient2=[0,1,0],
                 mosaic=30, mosaic_v=30, shape_type='cuboid')
 
-    mono = instrument.Monochromator(dspacing=3.355, mosaic=45, mosaic_v=45, 
+    mono = instruments.Monochromator(dspacing=3.355, mosaic=45, mosaic_v=45, 
                         width=12, height=8, depth=0.15,
                         curvr_h=0, curvr_h_opt=False, curvr_v=10, curvr_v_opt=True)
 
-    ana = instrument.Analyzer(dspacing=3.355, mosaic=45, mosaic_v=45, 
+    ana = instruments.Analyzer(dspacing=3.355, mosaic=45, mosaic_v=45, 
                         width=12, height=8, depth=0.3,
                         curvr_h=0, curvr_h_opt=False, curvr_v=0, curvr_v_opt=False)
 
-    in20 = instrument.TripleAxisInstrument(kf=2.662, sample=sample, arms=[10,200,115,85,0],
+    in20 = instruments.TripleAxisSpectrometer(kf=2.662, sample=sample, arms=[10,200,115,85,0],
                                 hcol=[30,30,30,30], vcol=[30,30,30,30],
                                 a3_offset=90, scat_senses=(-1,1,-1))
 
@@ -51,10 +51,10 @@ def test_resolution_matrices_MS()
 def angle2(x, y, z, h, k, l, lattice):
     r"""Function necessary for Prefactor functions
     """
-    latticestar = instrument.tools._star(lattice)[-1]
+    latticestar = instruments.tools._star(lattice)[-1]
 
     return np.arccos(
-        2 * np.pi * (h * x + k * y + l * z) / instrument.tools._modvec([x, y, z], lattice) / instrument.tools._modvec(
+        2 * np.pi * (h * x + k * y + l * z) / instruments.tools._modvec([x, y, z], lattice) / instruments.tools._modvec(
             [h, k, l], latticestar))
 
 
@@ -114,7 +114,7 @@ def PrefDemo(H, K, L, W, EXP, p):
     """
     [sample, rsample] = EXP.get_lattice()
 
-    q2 = instrument.tools._modvec([H, K, L], rsample) ** 2
+    q2 = instruments.tools._modvec([H, K, L], rsample) ** 2
 
     sd = q2 / (16 * np.pi ** 2)
     ff = 0.0163 * np.exp(-35.883 * sd) + 0.3916 * np.exp(-13.223 * sd) + 0.6052 * np.exp(-4.339 * sd) - 0.0133
@@ -145,7 +145,7 @@ def PrefDemo2(H, K, L, W, EXP, p):
     """
     [sample, rsample] = EXP.get_lattice()
 
-    q2 = instrument.tools._modvec([H, K, L], rsample) ** 2
+    q2 = instruments.tools._modvec([H, K, L], rsample) ** 2
 
     sd = q2 / (16 * np.pi ** 2)
     ff = 0.0163 * np.exp(-35.883 * sd) + 0.3916 * np.exp(-13.223 * sd) + 0.6052 * np.exp(-4.339 * sd) - 0.0133
@@ -179,7 +179,7 @@ def PrefDemo3(H, K, L, W, EXP, p):
 sumIavg = 1646.8109875866667
 sumIstd = 0.67288676280070814 * 2
 
-instr = instrument.TripleAxisInstrument(test=1)
+instr = instruments.TripleAxisSpectrometer(test=1)
 
 instr.method = 0
 instr.mono.tau = 'PG(002)'
@@ -223,7 +223,7 @@ def test_cooper_nathans():
 
     NP = EXP.RMS
     R = EXP.R0
-    BraggWidths = instrument.tools.get_bragg_widths(NP)
+    BraggWidths = instruments.tools.get_bragg_widths(NP)
     angles = EXP_coopernathans.get_angles_and_Q(hkle)[0]
     ResVol = (2 * np.pi) ** 2 / np.sqrt(np.linalg.det(NP)) * 2
 
@@ -254,7 +254,7 @@ def test_popovici():
 
     NP = EXP_popovici.RMS
     R = EXP_popovici.R0
-    BraggWidths = instrument.tools.get_bragg_widths(NP)
+    BraggWidths = instruments.tools.get_bragg_widths(NP)
     angles = EXP_popovici.get_angles_and_Q(hkle)[0]
 
     ResVol = (2 * np.pi) ** 2 / np.sqrt(np.linalg.det(NP)) * 2
@@ -272,7 +272,7 @@ def test_4d_conv():
     sample = Sample(6, 7, 8, 90, 90, 90)
     sample.u = [1, 0, 0]
     sample.v = [0, 0, 1]
-    EXP = instrument.TripleAxisInstrument(14.7, sample, hcol=[80, 40, 40, 80], vcol=[120, 120, 120, 120], mono='pg(002)',
+    EXP = instruments.TripleAxisSpectrometer(14.7, sample, hcol=[80, 40, 40, 80], vcol=[120, 120, 120, 120], mono='pg(002)',
                                 ana='pg(002)')
     EXP.moncor = 0
 
@@ -300,7 +300,7 @@ def test_sma_conv():
     sample = Sample(6, 7, 8, 90, 90, 90)
     sample.u = [1, 0, 0]
     sample.v = [0, 0, 1]
-    EXP = instrument.TripleAxisInstrument(14.7, sample, hcol=[80, 40, 40, 80], vcol=[120, 120, 120, 120], mono='pg(002)',
+    EXP = instruments.TripleAxisSpectrometer(14.7, sample, hcol=[80, 40, 40, 80], vcol=[120, 120, 120, 120], mono='pg(002)',
                                 ana='pg(002)')
     EXP.moncor = 0
 
@@ -324,7 +324,7 @@ def test_sma_conv():
 def test_plotting(mock_show):
     """Test Plotting methods
     """
-    EXP = instrument.TripleAxisInstrument()
+    EXP = instruments.TripleAxisSpectrometer()
 
     EXP.plot_instrument([1, 0, 0, 0])
     EXP.plot_projections([1, 0, 0, 0])
@@ -358,11 +358,11 @@ def test_sample():
 def test_GetTau():
     """Test monochromator crystal tau value finder
     """
-    assert (instrument.tools.GetTau(1.87325, getlabel=True) == 'pg(002)')
-    assert (instrument.tools.GetTau(1.8, getlabel=True) == '')
-    assert (instrument.tools.GetTau(10) == 10)
+    assert (instruments.tools.GetTau(1.87325, getlabel=True) == 'pg(002)')
+    assert (instruments.tools.GetTau(1.8, getlabel=True) == '')
+    assert (instruments.tools.GetTau(10) == 10)
     with pytest.raises((AnalyzerError, MonochromatorError, KeyError)):
-        instrument.tools.GetTau('blah')
+        instruments.tools.GetTau('blah')
 
 
 def test_CleanArgs_err():
@@ -375,9 +375,9 @@ def test_fproject():
     """Test projection function
     """
     x = np.ones((4, 4, 1))
-    instrument.tools.fproject(x, 0)
-    instrument.tools.fproject(x, 1)
-    instrument.tools.fproject(x, 2)
+    instruments.tools.fproject(x, 0)
+    instruments.tools.fproject(x, 1)
+    instruments.tools.fproject(x, 2)
 
 
 def test_constants():
@@ -390,7 +390,7 @@ def test_constants():
 def test_errors():
     """Test exception handling
     """
-    EXP = instrument.TripleAxisInstrument()
+    EXP = instruments.TripleAxisSpectrometer()
     EXP.sample.u = [1, 0, 0]
     EXP.sample.v = [2, 0, 0]
     with pytest.raises(ScatteringTriangleError):
@@ -400,7 +400,7 @@ def test_errors():
 def test_calc_res_cases():
     """Test different resolution cases
     """
-    EXP = instrument.TripleAxisInstrument()
+    EXP = instruments.TripleAxisSpectrometer()
     EXP.sample.shape = np.eye(3)
     EXP.calc_resolution_HKLE([1, 0, 0, 0])
 
@@ -420,7 +420,7 @@ def test_calc_res_cases():
     EXP.ana.Q = 1.5
     EXP.calc_resolution_HKLE([1, 0, 0, 0])
 
-    EXP.Smooth = instrument.tools._Dummy('Smooth')
+    EXP.Smooth = instruments.tools._Dummy('Smooth')
     EXP.Smooth.X = 1
     EXP.Smooth.Y = 1
     EXP.Smooth.Z = 1
@@ -431,14 +431,14 @@ def test_calc_res_cases():
 def test_projection_calc():
     """Test different cases of resolution ellipse slices/projections
     """
-    EXP = instrument.TripleAxisInstrument()
+    EXP = instruments.TripleAxisSpectrometer()
     EXP.calc_resolution_HKLE([1, 0, 0, 0])
     EXP.calc_projections([0, 1, 0, 0])
     EXP.get_resolution_params([0, 1, 0, 0], 'QxQy', 'slice')
     with pytest.raises(InstrumentError):
         EXP.get_resolution_params([1, 1, 0, 0], 'QxQy', 'slice')
 
-    EXP = instrument.TripleAxisInstrument()
+    EXP = instruments.TripleAxisSpectrometer()
     EXP.get_resolution_params([1, 0, 0, 0], 'QxQy', 'slice')
     EXP.get_resolution_params([1, 0, 0, 0], 'QxQy', 'project')
     EXP.get_resolution_params([1, 0, 0, 0], 'QxW', 'slice')

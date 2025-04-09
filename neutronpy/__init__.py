@@ -9,7 +9,7 @@ import pkg_resources
 from . import constants
 from . import fileio
 from . import functions
-from . import instrument
+from . import instruments
 from . import models
 # from . import spurion
 # from . import scattering
@@ -21,7 +21,7 @@ from .crystal import Sample
 from .neutron import Neutron
 # from .lsfit import Fitter
 # from .instrument import Instrument
-from .instrument import TripleAxisInstrument, TimeOfFlightInstrument
+from .instruments import TripleAxisSpectrometer, TimeOfFlightSpectrometer
 
 try:
     from . import gui
