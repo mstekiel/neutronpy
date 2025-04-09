@@ -46,7 +46,7 @@ def test_EIGER_t270():
     assert np.allclose(t_RM_ppzE, RM[0])
 
     # Test hkl coordinate system
-    R0, RM, RV = TAS.calc_resolution(HKLE, base='hkl')
+    R0, RM, RV = TAS.calc_resolution_HKLE(HKLE, base='hkl')
     assert np.allclose(t_RM_hklE, RM[0])
 
 def test_in20():
@@ -75,7 +75,7 @@ def test_in20():
     assert np.allclose(t_RM_ppzE, RM[0])
 
     # Test hkl coordinate system
-    R0, RM, RV = TAS.calc_resolution(HKLE, base='hkl')
+    R0, RM, RV = TAS.calc_resolution_HKLE(HKLE, base='hkl')
     print(np.around(RM[0],5) )
     assert np.allclose(t_RM_hklE, RM[0])
 
@@ -104,7 +104,7 @@ def test_tax():
     assert np.allclose(t_RM_ppzE, RM[0])
 
     # Test hkl coordinate system
-    R0, RM, RV = TAS.calc_resolution(HKLE, base='hkl')
+    R0, RM, RV = TAS.calc_resolution_HKLE(HKLE, base='hkl')
     assert np.allclose(t_RM_hklE, RM[0])
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@ class TakinTripleAxis(TripleAxisInstrument):
     def __repr__(self):
         return "Instrument('tas', engine='takin')"
 
-    def calc_resolution(self, hkle):
+    def calc_resolution_HKLE(self, hkle):
         pass
 
     def calc_projections(self, hkle):

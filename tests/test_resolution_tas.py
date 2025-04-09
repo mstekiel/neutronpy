@@ -219,7 +219,7 @@ def test_cooper_nathans():
     EXP = EXP_coopernathans
     hkle = [1., 0., 0., 0.]
 
-    EXP.calc_resolution(hkle)
+    EXP.calc_resolution_HKLE(hkle)
 
     NP = EXP.RMS
     R = EXP.R0
@@ -250,7 +250,7 @@ def test_popovici():
     EXP = EXP_popovici
     hkle = [1, 0, 0, 0]
 
-    EXP.calc_resolution(hkle)
+    EXP.calc_resolution_HKLE(hkle)
 
     NP = EXP_popovici.RMS
     R = EXP_popovici.R0
@@ -394,7 +394,7 @@ def test_errors():
     EXP.sample.u = [1, 0, 0]
     EXP.sample.v = [2, 0, 0]
     with pytest.raises(ScatteringTriangleError):
-        EXP.calc_resolution([1, 1, 0, 0])
+        EXP.calc_resolution_HKLE([1, 1, 0, 0])
 
 
 def test_calc_res_cases():
@@ -402,37 +402,37 @@ def test_calc_res_cases():
     """
     EXP = instrument.TripleAxisInstrument()
     EXP.sample.shape = np.eye(3)
-    EXP.calc_resolution([1, 0, 0, 0])
+    EXP.calc_resolution_HKLE([1, 0, 0, 0])
 
     EXP.sample.shape = np.eye(3)[np.newaxis].reshape((1, 3, 3))
-    EXP.calc_resolution([1, 0, 0, 0])
+    EXP.calc_resolution_HKLE([1, 0, 0, 0])
 
     EXP.horifoc = 1
-    EXP.calc_resolution([1, 0, 0, 0])
+    EXP.calc_resolution_HKLE([1, 0, 0, 0])
 
     EXP.moncor = 1
-    EXP.calc_resolution([1, 0, 0, 0])
+    EXP.calc_resolution_HKLE([1, 0, 0, 0])
 
     EXP.method = 1
-    EXP.calc_resolution([1, 0, 0, 0])
+    EXP.calc_resolution_HKLE([1, 0, 0, 0])
 
     EXP.ana.thickness = 1
     EXP.ana.Q = 1.5
-    EXP.calc_resolution([1, 0, 0, 0])
+    EXP.calc_resolution_HKLE([1, 0, 0, 0])
 
     EXP.Smooth = instrument.tools._Dummy('Smooth')
     EXP.Smooth.X = 1
     EXP.Smooth.Y = 1
     EXP.Smooth.Z = 1
     EXP.Smooth.E = 1
-    EXP.calc_resolution([1, 0, 0, 0])
+    EXP.calc_resolution_HKLE([1, 0, 0, 0])
 
 
 def test_projection_calc():
     """Test different cases of resolution ellipse slices/projections
     """
     EXP = instrument.TripleAxisInstrument()
-    EXP.calc_resolution([1, 0, 0, 0])
+    EXP.calc_resolution_HKLE([1, 0, 0, 0])
     EXP.calc_projections([0, 1, 0, 0])
     EXP.get_resolution_params([0, 1, 0, 0], 'QxQy', 'slice')
     with pytest.raises(InstrumentError):

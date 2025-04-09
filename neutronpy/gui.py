@@ -148,7 +148,7 @@ class MainWindow(QMainWindow):
 
         self.q = [float(i) for i in self.q_input.text().split(',')]
 
-        self.instrument.calc_resolution(self.q)
+        self.instrument.calc_resolution_HKLE(self.q)
         self.instrument.calc_projections(self.q)
 
         # TEST CODE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
