@@ -43,9 +43,16 @@ ScatteringSenses = namedtuple('ScatteringSenses', 'mono, sample, ana')
 #       SOLUTION: The speed doesn't matter for resolution calulation, as much
 #       as it matters for evaluatin spectral weight within the resolution ellipsoid.
 #       Clarity of code is more important here, keep it as it is.
-#   [ ] Change the policy of resolutions calculations. Instead of throwing errors when 
+# - [X] Change the policy of resolutions calculations. Instead of throwing errors when 
 #       the `hkl` is not in the scattering plane, return NaNs.
-
+# - [X] the methods of calculating the resolution ellipsoid have different deifnitions for them.
+#       Eckold-Sobolev say `resolution ellipsoid is a surface in Q-E where the probability
+#       takes value of 0.5`, i.e. resolution elipsoid is defined by its FWHM.
+#       On the other hand, Popovici writes `M is the resolution matrix, the inverse 
+#       of which is the covariance matrix. the covariance matrix is defined by
+#       variances and cross corellations, thus fundamentally different from FWHM.
+#       I need to find some with the unifying solution, or believe the solution is unified by Tobi already.
+#       [T. Weber mail 26.08.2024] Yes it in terms of variances in Takin and res_py
 class TripleAxisSpectrometer(NeutronSpectrometer, PlotInstrument):
     u"""An object that represents a Triple Axis Spectrometer (TAS) instrument
     experimental configuration, including a sample.
@@ -457,6 +464,7 @@ class TripleAxisSpectrometer(NeutronSpectrometer, PlotInstrument):
             Normalization factor. Doesn't correspond to the one in Takin.
         RE: np.ndarray (Q.shape+(4,4))
             Resolution ellipsoid variance matrix in [Q_para, Q_perp, Qz, E] coordinates.
+            Matrix is inverse covariance matrix.
         RV: np.ndarray (Q.shape)
             Volume of the resolution ellipsoid in [meV A^(-3)].
 
@@ -674,7 +682,7 @@ class TripleAxisSpectrometer(NeutronSpectrometer, PlotInstrument):
         R0 : (...)
             Normalization factor, doesn't correspond to the one in Takin.
         RE : (...,4,4)
-            Resolution elipsoid in coordinates defined by `base`.
+            Resolution elipsoid in coordinates defined by `base`. It is inverse covariance matrix.
         RV : (...)
             Volume of the resolution elipsoid in [meV A^3].
 
@@ -832,7 +840,7 @@ class TripleAxisSpectrometer(NeutronSpectrometer, PlotInstrument):
             A3[not_in_scattering_plane] = np.nan
             warn( VectorNotInScatteringPlane(f'Vector not in scattering plane: \n{hkle[not_in_scattering_plane]}') )
 
-        return np.degrees([A1, A2, A3, A4, A5, A6]).T
+        return np.degrees( np.stack([A1, A2, A3, A4, A5, A6], axis=-1) )
 
     def resolution_convolution(self, 
                                hkle: np.ndarray, 
@@ -851,12 +859,12 @@ class TripleAxisSpectrometer(NeutronSpectrometer, PlotInstrument):
         hkle: array_like (...,4)
             Array of points in 4D space defining the momentum and energy transfer at which to 
             determine the convolved intensity.
-        Sqw_fast: function signature: Sqw(hkle, params)
+        Sqw_fast: function signature: Sqw(hkle, Sqw_pars)
             Fast part of the spectral weight. The function accepts `hkle`, with the same signature
-            as above. `params` are any parameters used by the function.
-        Sqw_slow: funciton signature: Sqw(h,k,l,E, params)
+            as above. `Sqw_pars` are any parameters used by the function.
+        Sqw_slow: funciton signature: Sqw(hkle, Sqw_pars)
             Slow part of the spectral weight. Same signature and specs as above `Sqw_fast`.
-        Sqw_params: Any
+        Sqw_pars: Any
             Parameters passed to the spectral weight functions.
         method: `pop`, `eck`
             Algorithm for resolution convolution.
@@ -879,25 +887,20 @@ class TripleAxisSpectrometer(NeutronSpectrometer, PlotInstrument):
         varying part does not change its value significantly within the region of the resolution ellipsoid.
 
         """
-        # DEV NOTES
-        # - [X] the methods of calculating the resolution ellipsoid have different deifnitions for them.
-        #       Eckold-Sobolev say `resolution ellipsoid is a surface in Q-E where the probability
-        #       takes value of 0.5`, i.e. resolution elipsoid is defined by its FWHM.
-        #       On the other hand, Popovici writes `M is the resolution matrix, the inverse 
-        #       of which is the covariance matrix. the covariance matrix is defined by
-        #       variances and cross corellations, thus fundamentally different from FWHM.
-        #       I need to find some with the unifying solution, or believe the solution is unified by Tobi already.
-        #       [T. Weber mail 26.08.2024] Yes it in terms of variances in Takin and res_py
-
-
         R0, RE, RV = self.calc_resolution_HKLE(hkle, 'hkl', method)
         Sqw = np.zeros(hkle[...,0].shape)
 
         rnd_generator = np.random.default_rng(seed=seed)
         # Going through each point in the grid
+        self.logger.info(f'Performing resolution convolution for {len(hkle)} points')
         for ind in np.ndindex(hkle[...,0].shape):
             hkle0 = hkle[ind]
             covariance = np.linalg.inv(RE[ind])
+
+            if np.isnan(covariance).any():
+                self.logger.warning(f'NaN in covariance matrix for hkle={hkle0}, skipping convolution.')
+                continue
+
             ellipsoid_samples = rnd_generator.multivariate_normal(mean=hkle0, cov=covariance, size=Nsamples)
 
             # Average the value of Sqw over the resolution ellipsoid region
