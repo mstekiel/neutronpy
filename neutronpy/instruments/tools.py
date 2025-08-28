@@ -1,4 +1,6 @@
-# -*- coding: utf-8 -*-
+'''
+Functions for various calculations. Depracated, should be cleaned up and deleted.
+'''
 import inspect
 from numbers import Number
 from enum import Enum
